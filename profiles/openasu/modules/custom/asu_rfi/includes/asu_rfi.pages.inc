@@ -37,6 +37,8 @@ function asu_rfi_form($delta){
 }
 
 function asu_rfi_form_data($form, &$form_state) {
+
+  global $base_url;
     
     //Clear all data when browser back button is clicked
     session_set_cookie_params(0);
@@ -157,7 +159,14 @@ function asu_rfi_form_data($form, &$form_state) {
 	    '#size' => 30,
 	    '#maxlength' => 64,
 	    '#default_value' => $type_degree,
-	); 
+	);
+
+  $form['domain'] = array(
+    '#type' => 'hidden',
+    '#size' => 30,
+    '#maxlength' => 64,
+    '#default_value' => $base_url,
+  );
     
 	$form['my_interest'] = array(
 	    '#type' => 'fieldset',
@@ -592,7 +601,8 @@ function asu_rfi_form_data_submit($form, &$form_state){
 	$multi_form_type = "Undergraduate multi form";
 	$form_state['storage']['prospect_level'] = "Undergraduate";
     }
-  
+
+    $form_state['storage']['domain'] =  $form_state['values']['domain'];
     $form_state['storage']['ip_address'] =  $form_state['values']['ip_address'];
     $form_state['storage']['college_code'] =  $form_state['values']['college'];
     $form_state['storage']['program_code'] =  $form_state['values']['program_code'];
@@ -623,9 +633,10 @@ function asu_rfi_form_data_submit($form, &$form_state){
 		);
 		$entity = entity_create('node', $ent_values);
 		$ewrapper = entity_metadata_wrapper('node', $entity);
-		$ewrapper->title->set($form_state['storage']['first_name']);
+    $ewrapper->field_rfi_domain->set($form_state['storage']['domain']);
+    $ewrapper->title->set($form_state['storage']['first_name']);
 		$ewrapper->field_rfi_first_name->set($form_state['storage']['first_name']);
-	    	$ewrapper->field_rfi_last_name->set($form_state['storage']['last_name']);
+    $ewrapper->field_rfi_last_name->set($form_state['storage']['last_name']);
 		$ewrapper->field_rfi_student_type->set($form_state['storage']['student_type']);
 		$ewrapper->field_rfi_email->set($form_state['storage']['email']);
 		$ewrapper->field_rfi_phone->set($form_state['storage']['phone']);
@@ -663,6 +674,7 @@ function asu_rfi_form_data_submit($form, &$form_state){
 	
 		$node = node_load($get_nodeid);
 		$ewrapper = entity_metadata_wrapper('node', $node);
+    $ewrapper->field_rfi_domain->set($form_state['storage']['domain']);
 		$ewrapper->title->set($form_state['storage']['first_name']);
 		$ewrapper->field_rfi_first_name->set($form_state['storage']['first_name']);
 		$ewrapper->field_rfi_last_name->set($form_state['storage']['last_name']);
@@ -1061,6 +1073,9 @@ function asu_rfi_long_form($delta, $programs, $form_type){
 
 /** construct the form **/
 function asu_rfi_long_form_data($form, &$form_state, $programs, $form_type){
+
+  global $base_url;
+
     //include theme css
     drupal_add_css(drupal_get_path('module', 'asu_rfi') .'/theme/asu_rfi.css');
     // Add no-store in Cache-Control to clear all data when browser back button is clicked
@@ -1115,9 +1130,16 @@ function asu_rfi_long_form_data($form, &$form_state, $programs, $form_type){
 	'#size' => 30,
 	'#maxlength' => 64,
 	'#default_value' => $form_type,
-    ); 
-    
-    $form['my_interest'] = array(
+    );
+
+  $form['domain'] = array(
+    '#type' => 'hidden',
+    '#size' => 30,
+    '#maxlength' => 64,
+    '#default_value' => $base_url,
+  );
+
+  $form['my_interest'] = array(
 	'#type' => 'fieldset',
 	'#title' => 'My interests',
 	'#collapsible' => TRUE,
@@ -1553,6 +1575,7 @@ function asu_rfi_long_form_data_submit($form, &$form_state){
 	$long_form_type = "Undergraduate long form";
 	$form_state['values']['prospect_level'] = "Undergraduate";
     }
+    $domain = check_plain($form_state['values']['domain']);
     $fname = check_plain($form_state['values']['first_name']);
     $lname = check_plain($form_state['values']['last_name']);
     $email = check_plain($form_state['values']['email']);
@@ -1651,6 +1674,7 @@ function asu_rfi_long_form_data_submit($form, &$form_state){
     $entity = entity_create('node', $ent_values);
     $ewrapper = entity_metadata_wrapper('node', $entity);
     $ewrapper->title->set($fname);
+    $ewrapper->field_rfi_domain->set($domain);
     $ewrapper->field_rfi_first_name->set($fname);
     $ewrapper->field_rfi_last_name->set($lname);
     $ewrapper->field_rfi_student_type->set($stype);
@@ -1743,7 +1767,7 @@ function asu_rfi_current_form($delta, $programs, $form_type){
 
 /** construct the form **/
 function asu_rfi_current_form_data($form, &$form_state, $programs, $form_type){
-   
+   global $base_url;
 
     $form = array();
     honeypot_add_form_protection($form, $form_state, array('honeypot', 'time_restriction'));  
@@ -1767,9 +1791,16 @@ function asu_rfi_current_form_data($form, &$form_state, $programs, $form_type){
 	'#size' => 30,
 	'#maxlength' => 64,
 	'#default_value' => $form_type,
-    ); 
-   
-    $form['about_me'] = array(
+    );
+
+  $form['domain'] = array(
+    '#type' => 'hidden',
+    '#size' => 30,
+    '#maxlength' => 64,
+    '#default_value' => $base_url,
+  );
+
+  $form['about_me'] = array(
      '#type' => 'fieldset',
      '#title' => 'About me',
      '#collapsible' => TRUE,
@@ -1898,6 +1929,7 @@ function asu_rfi_current_form_data_validate($form,&$form_state){
 function asu_rfi_current_form_data_submit($form, &$form_state){
     global $user;
 
+    $domain = $form_state['values']['domain'];
     $fname = $form_state['values']['first_name'];
     $lname = $form_state['values']['last_name'];
     $email = $form_state['values']['email'];
@@ -1934,6 +1966,7 @@ function asu_rfi_current_form_data_submit($form, &$form_state){
     
     $ewrapper->title->set($fname);
     $ewrapper->field_rfi_first_name->set($fname);
+    $ewrapper->field_rfi_domain->set($domain);
     $ewrapper->field_rfi_last_name->set($lname);
     $ewrapper->field_rfi_email->set($email);
     $ewrapper->field_rfi_phone->set($phone);

@@ -638,7 +638,7 @@ CALLBACKS
  * @param $data
  */
 function asu_rfi_repost_rfi($data) {
-  
+  global $base_url;
   // Load and repost the RFI submissions based on the Prospect level
 
      $node = node_load($data->nid);
@@ -664,6 +664,7 @@ function asu_rfi_repost_rfi($data) {
         $gradpost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
         $gradpost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
         $gradpost['submission_nodeid'] = $node->nid;
+        $gradpost['domain'] = isset($node->field_rfi_domain['und'][0]['value']) ? $node->field_rfi_domain['und'][0]['value'] : $base_url;
         $type_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
         if($type_of_form == "Graduate long form"){
           $gradpost['type_of_form'] = 'LF';
@@ -698,6 +699,7 @@ function asu_rfi_repost_rfi($data) {
         $upost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
         $upost['submission_nodeid'] = $node->nid;
         $upost['cron_run'] = "Cron_running";
+        $upost['domain'] = isset($node->field_rfi_domain['und'][0]['value']) ? $node->field_rfi_domain['und'][0]['value'] : $base_url;
         $utype_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
         if($utype_of_form == "Undergraduate long form"){
           $upost['type_of_form'] = 'LF';
@@ -1039,6 +1041,7 @@ function asu_rfi_action_info() {
 }
 
 function asu_rfi_bulk_submit_action(&$node, $context) {
+  global $base_url;
   if($node->field_rfi_prospect_level['und'][0]['value'] == "Undergraduate"){
         $upost['first_name'] = $node->field_rfi_first_name['und'][0]['value'];
         $upost['last_name'] = $node->field_rfi_last_name['und'][0]['value'];
@@ -1057,6 +1060,7 @@ function asu_rfi_bulk_submit_action(&$node, $context) {
         $upost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
         $upost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
         $upost['submission_nodeid'] = $node->nid;
+        $upost['domain'] = isset($node->field_rfi_domain['und'][0]['value']) ? $node->field_rfi_domain['und'][0]['value'] : $base_url;
         $utype_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
         if($utype_of_form == "Undergraduate long form"){
           $upost['type_of_form'] = 'LF';
@@ -1087,6 +1091,7 @@ function asu_rfi_bulk_submit_action(&$node, $context) {
         $gradpost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
         $gradpost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
         $gradpost['submission_nodeid'] = $node->nid;
+        $gradpost['domain'] = isset($node->field_rfi_domain['und'][0]['value']) ? $node->field_rfi_domain['und'][0]['value'] : $base_url;
         $type_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
         if($type_of_form == "Graduate long form"){
           $gradpost['type_of_form'] = 'LF';

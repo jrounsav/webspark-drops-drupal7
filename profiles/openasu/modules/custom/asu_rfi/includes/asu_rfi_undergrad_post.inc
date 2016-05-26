@@ -28,9 +28,11 @@ function asu_rfi_undergrad_post($data)
   $form_mode = variable_get('asu_rfi_form_mode');
   $hashkey = sha1($mw_auth_key.'+'.$nodeid);
   $type_of_form = $data['type_of_form'];
-  $domain = $_SERVER['HTTP_HOST'];
+  $domain = isset($data['domain']) ? $data['domain'] : $_SERVER['HTTP_HOST'];
   $source = $domain.'-'.$type_of_form.'-UG';
 
+  dpm($domain);
+  
   //mobile phone
   if(isset($data['mobile_check'])){
     $mobile = str_replace('-', '', $data['mobile_check']);

@@ -23,6 +23,7 @@ DRUPAL HOOKS
 
  module_load_include('inc', 'asu_rfi', 'includes/asu_rfi_grad_post');
  module_load_include('inc', 'asu_rfi', 'includes/asu_rfi_undergrad_post');
+ module_load_include('inc', 'asu_rfi', 'includes/asu_rfi_get_programs');
 
 /**
  * Implements hook_permission().
@@ -390,6 +391,7 @@ function asu_rfi_get_block_instance_settings($multi_id = NULL, $endpoint_build =
  */
 function asu_rfi_cron() {
 
+  asu_rfi_check_programs();
   
   $middleware_host = "webforms.asu.edu";
   

@@ -14,6 +14,14 @@ class online_submission extends rfi_submission
   function __construct($data)
   {
     parent::__construct($data);
+
+    $this->setFirstName($data['first_name']);
+    $this->setLastName($data['last_name']);
+    $this->setProgram($data['program']);
+    $this->setEmail($data['email']);
+    $this->setPhone($data['phone']);
+    $this->setNodeId($data['node_id']);
+    $this->setTypeOfForm($data['type_of_form']);
   }
 
   protected function check_managed_online()

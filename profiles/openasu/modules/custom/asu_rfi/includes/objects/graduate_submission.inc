@@ -11,6 +11,11 @@ class graduate_submission extends rfi_submission
     return $this->endpoint;
   }
   
+  function __construct($data)
+  {
+    parent::__construct($data);
+  }
+
   protected function post_submission()
   {
     $submission_data = $this->build_payload();

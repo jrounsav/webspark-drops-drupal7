@@ -9,6 +9,11 @@ class undergraduate_submission extends rfi_submission{
   {
     return $this->endpoint;
   }
+  
+  function __construct($data)
+  {
+    parent::__construct($data);
+  }
 
   protected function post_submission()
   {

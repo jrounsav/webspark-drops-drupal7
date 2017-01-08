@@ -11,6 +11,11 @@ class online_submission extends rfi_submission
     return $this->endpoint;
   }
 
+  function __construct($data)
+  {
+    parent::__construct($data);
+  }
+
   protected function check_managed_online()
   {
     $getProgramsList = asu_rfi_parse_programs();

@@ -8,6 +8,7 @@ class rfi_submission
   protected $source_id;
   protected $domain;
   protected $prod_test_flag;
+
   protected $attempted_submissions;
   protected $error_response;
 
@@ -312,7 +313,12 @@ class rfi_submission
     return $this->campus;
   }
 
-
+  function __construct($data)
+  {
+    $this->setDomain();
+    $this->setSourceId();
+    $this->setProdTestFlag();
+  }
 
   public function post()
   {

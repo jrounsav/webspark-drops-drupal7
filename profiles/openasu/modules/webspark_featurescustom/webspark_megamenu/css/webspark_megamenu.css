@@ -93,7 +93,7 @@ li.tb-megamenu-item.mega.active .mega-dropdown-inner a {
 }
 
 .tb-megamenu-submenu, .tb-megamenu-submenu.dropdown-menu.mega-dropdown-menu.nav-child {
-  padding: 10px 0;
+  /*padding: 10px 0;*/
   border-radius: 0 0 4px 4px;
   border: solid 1px #000000;
 }
@@ -101,7 +101,7 @@ li.tb-megamenu-item.mega.active .mega-dropdown-inner a {
 .tb-megamenu-column-inner.mega-inner.clearfix a, ul.tb-megamenu-subnav.mega-nav a {
   display: block;
   clear: both;
-  padding: 9px 10px 10px 25px !important;
+  padding: 19px 10px 19px 25px !important;
   font-size: 16px;
   font-weight: normal;
   line-height: 1;
@@ -145,7 +145,7 @@ li.tb-megamenu-item.mega.active .mega-dropdown-inner a {
 
 .tb-megamenu-item.level-2.mega.dropdown-submenu .nav-child {
   position : absolute;
-  top : -5px;
+  top : 5px;
 }
 
 .tb-megamenu .block-inner{
@@ -221,10 +221,14 @@ li.tb-megamenu-item.mega.active .mega-dropdown-inner a {
 .tb-megamenu-submenu {
   border: none;
 }
-.tb-megamenu-nav>li>.tb-megamenu-submenu>.mega-dropdown-inner>.tb-megamenu-row>.tb-megamenu-column:not(:first-child){
-  border-left: 1px solid #AFA593;
+.tb-megamenu-nav>li>.tb-megamenu-submenu>.mega-dropdown-inner>.tb-megamenu-row>.tb-megamenu-column:not(:first-child)::after{
+  content: "";
+  background: #AFA593;
+  position: absolute;
+  bottom: 5%;
+  height: 90%;
+  width: 1px;
 }
-
 .tb-megamenu-nav, ul.tb-megamenu-subnav a {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

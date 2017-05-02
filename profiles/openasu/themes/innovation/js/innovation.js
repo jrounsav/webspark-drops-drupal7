@@ -16,7 +16,7 @@
   };
   var navOffset = 0;
   //show hidden Mega Menu slider when needed
-  $(window).scroll(function () {
+  $(window).on("scroll resize", function () {
   if ($('#navbar-administration'.length > 0)) {
     navOffset = $('#navbar-bar').height() + $('#navbar-tray').height();
     if (typeof($('#navbar-tray').attr('data-offset-left')) !== typeof undefined) {

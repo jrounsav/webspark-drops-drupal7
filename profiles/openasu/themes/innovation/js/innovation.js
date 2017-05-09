@@ -14,23 +14,6 @@
 
   }
   };
-  var navOffset = 0;
-  //show hidden Mega Menu slider when needed
-  $(window).on("scroll resize", function () {
-  if ($('#navbar-administration'.length > 0)) {
-    navOffset = $('#navbar-bar').height() + $('#navbar-tray').height();
-    if (typeof($('#navbar-tray').attr('data-offset-left')) !== typeof undefined) {
-    navOffset = navOffset - $('#navbar-tray').height();
-    }
-  }
-  if (($('#ASUNavMenu').offset().top - ($(window).scrollTop() + navOffset)) < 1 && $('.ghostSlider').length < 1) {
-    $('#ASUNavMenu').clone(true).prependTo(document.body).addClass('ghostSlider')
-    .css({"position": "fixed", "z-index": "1000", "width": "100%", "visibility": "visible"})
-    .removeAttr('id');
-  } else if (($('#ASUNavMenu').offset().top - ($(window).scrollTop() + navOffset)) >= 1) {
-    $('.ghostSlider').remove();
-  }
-  });
   //Used to determine if RFI form is on the page.
   // Go to div if it is go to URL if it isn't #block-asu-rfi-asu-rfi-form-block
   $('#take-me-to-rfi').on('click', function (e) {

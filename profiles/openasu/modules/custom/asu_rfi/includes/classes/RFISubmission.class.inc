@@ -188,7 +188,7 @@ class RFISubmission {
   public function getSourceID(){}
   public function validateSourceID($data){
 
-    if(!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬]/', $data) && strpos($data, "-RFIAPI")){
+    if(!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬]/', $data)){
       return true;
     }
 

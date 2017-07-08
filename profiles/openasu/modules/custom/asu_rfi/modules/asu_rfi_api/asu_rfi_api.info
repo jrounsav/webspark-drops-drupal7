@@ -1,0 +1,7 @@
+name = ASU Request for Information API
+description = Enables a client-site API so that organizations can use modular non-standard forms.
+core = 7.x
+package = ASU
+dependencies[] = asu_rfi
+dependencies[] = ctools
+version = "7.x-0.1"

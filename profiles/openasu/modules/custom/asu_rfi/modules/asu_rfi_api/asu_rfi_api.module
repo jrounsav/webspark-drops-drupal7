@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * TODO Figure out how to protect forms from bots.
+ * TODO Figure out a good method for placing modular forms.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function asu_rfi_api_permission()
+{
+  return array(
+    'configure asu rfi api' => array(
+      'title' => t('Configure ASU RFI API'),
+      'description' => t('Configure the ASU RFI API'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * TODO Set up admin config menu items
+ */
+function asu_rfi_api_menu()
+{
+  $items = array();
+
+  // API for POST requests
+  $items['asu_rfi/api/request'] = array(
+    'page callback' => 'asu_rfi_api_request_callback',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/asurfi-api'] = array(
+    'title' => 'Configure RFI API',
+    'description' => 'Update various API settings for the RFI',
+    'weight' => -30,
+    'page callback' => 'asu_rfi_api_config_page',
+    'access arguments' => array('configure asu rfi api'),
+  );
+
+  return $items;
+}
+
+
+/**
+ * Handle the POST request
+ *
+ * TODO Complete data submission
+ */
+function asu_rfi_api_request_callback(){
+  $response = asu_rfi_api_request($_POST);
+
+  return drupal_json_output($response);
+
+}
+
+/**
+ * API Config admin form
+ */
+function asu_rfi_api_config_page(){
+  // TODO populate form to confgure rate limiting
+}
+
+/**
+ * Attempt a request submission.
+ * @param $data
+ * @return array
+ */
+function asu_rfi_api_request($data){
+
+  ctools_include("RFIRateLimiter.class", "asu_rfi_api");
+  $limiter = new RFIRateLimiter();
+
+  $response = $limiter->checkLimit();
+
+  if($response['status'] != FALSE){
+
+    ctools_include("RFISubmission.class", "asu_rfi", "includes/classes");
+    $submission = new RFISubmission();
+
+    $response = $submission->validate($data);
+    if($response['status']){
+
+      $status = asu_rfi_api_submit($data);
+
+      if($status == true){
+        $response['status'] = 1;
+        $response['response'] = "Submission to client site complete";
+      } else {
+        $response['status'] = 0;
+        $response['response'] = "Submission passed validation but failed to generate a node";
+        watchdog("asu_rfi_api", $response['response']);
+      }
+
+    } else {
+      $response = $submission->validate($data);
+      watchdog("asu_rfi_api", "Submission is invalid: " . $response['response']);
+    }
+
+  } else {
+    watchdog("asu_rfi_api", $response['response']);
+  }
+
+  return $response;
+}
+
+function asu_rfi_api_submit($data){
+
+  // TODO - Attempt submission of data, sanitizing input.
+
+  return false;
+}

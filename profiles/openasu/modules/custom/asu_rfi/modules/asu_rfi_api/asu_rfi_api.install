@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * Implements hook_schema()
+ * @return mixed
+ */
+function asu_rfi_api_schema() {
+
+  /* US states schema */
+  $schema['asu_rfi_api_rate_limiter'] = array(
+    'description' => 'Limit API hits',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Export ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'Created timestamp.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+
+}

@@ -17,6 +17,11 @@ class RFISubmission {
   private $email;
   private $phone;
   private $studentType;
+  private $birthdate;
+  private $SMS;
+  private $comments;
+  private $internationalStudent;
+  private $veteranStatus;
 
   /**
    * Required across all types of submissions
@@ -113,6 +118,7 @@ class RFISubmission {
   /**
    * ---- ---- ---- VALIDATE/SET/GET Single Fields --- --- --- --- ---
    */
+
   /**
    * Testing? Boolean, On/Off
    * @param $data
@@ -130,12 +136,12 @@ class RFISubmission {
     if(isset($this->prodTestFlag)){
       return $this->prodTestFlag;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateProdTestFlag($data){
 
-    if (filter_var($data, FILTER_VALIDATE_BOOLEAN)) {
+    if ($data == "TRUE" || $data == "FALSE") {
       return true;
     }
 
@@ -159,7 +165,7 @@ class RFISubmission {
     if(isset($this->college)){
       return $this->college;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateCollege($data){
@@ -191,7 +197,7 @@ class RFISubmission {
     if(isset($this->program)){
       return $this->program;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateProgram($data){
@@ -224,7 +230,7 @@ class RFISubmission {
     if(isset($this->prospectLevel)){
       return $this->prospectLevel;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateProspectLevel($data){
@@ -253,7 +259,7 @@ class RFISubmission {
     if(isset($this->campus)){
       return $this->campus;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateCampus($data){
@@ -286,7 +292,7 @@ class RFISubmission {
     if(isset($this->sourceID)){
       return $this->sourceID;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateSourceID($data){
@@ -315,7 +321,7 @@ class RFISubmission {
     if(isset($this->baseURL)){
       return $this->baseURL;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateBaseURL($data){
@@ -343,7 +349,7 @@ class RFISubmission {
     if(isset($this->firstName)){
       return $this->firstName;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateFirstName($data){
@@ -374,7 +380,7 @@ class RFISubmission {
     if(isset($this->lastName)){
       return $this->lastName;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateLastName($data){
@@ -405,7 +411,7 @@ class RFISubmission {
     if(isset($this->email)){
       return $this->email;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateEmail($data){
@@ -427,6 +433,7 @@ class RFISubmission {
   public function setPhone($data){
     if($this->validatePhone($data)){
       $this->phone = $data;
+      return true;
     } else {
       return false;
     }
@@ -435,7 +442,7 @@ class RFISubmission {
     if(isset($this->phone)){
       return $this->phone;
     } else {
-      return false;
+      return "";
     }
   }
   public function validatePhone($data){
@@ -467,7 +474,7 @@ class RFISubmission {
     if(isset($this->studentType)){
       return $this->studentType;
     } else {
-      return false;
+      return "";
     }
   }
   public function validateStudentType($data){
@@ -553,10 +560,25 @@ class RFISubmission {
    * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**
-   * Birth date
+   * Requester's date of birth
+   * @param $data
+   * @return bool
    */
-  public function setBirthdate(){}
-  public function getBirthdate(){}
+  public function setBirthdate($data){
+    if($this->validateBirthdate($data)){
+      $this->birthdate = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getBirthdate(){
+    if(isset($this->birthdate)){
+      return $this->birthdate;
+    } else {
+      return "";
+    }
+  }
   public function validateBirthdate($data){
 
     if(preg_match('/^(0[1-9]|1[0-2])\/(0[1-9]|1\d|2\d|3[01])\/(19|20)\d{2}$/', $data)){
@@ -567,23 +589,57 @@ class RFISubmission {
   }
 
   /**
-   * Accept SMS Notifications
+   * The phone number to be used if a user would like to receive info via SMS
+   * @param $data
+   * @return bool
    */
-  public function setSMS(){}
-  public function getSMS(){}
+  public function setSMS($data){
+    if($this->validateSMS($data)){
+      $this->SMS = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getSMS(){
+    if(isset($this->SMS)){
+      return $this->SMS;
+    } else {
+      return "";
+    }
+  }
   public function validateSMS($data){
 
-    if (filter_var($data, FILTER_VALIDATE_BOOLEAN)) {
-      return true;
+    // Some coutries use + and x in their phone numbers. Must allow
+    if (!preg_match('/[^\d+x]|x(?=[^x]*x)/', $data))
+    {
+      if(strlen($data) < 16){
+        return true;
+      }
     }
     return false;
   }
 
   /**
-   * Comment string
+   * Additional comments by requester for questions & info
+   * @param $data
+   * @return bool
    */
-  public function setComments(){}
-  public function getComments(){}
+  public function setComments($data){
+    if($this->validateComments($data)){
+      $this->comments = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getComments(){
+    if(isset($this->comments)){
+      return $this->comments;
+    } else {
+      return "";
+    }
+  }
   public function validateComments($data){
 
     if(!empty($data)){
@@ -593,26 +649,56 @@ class RFISubmission {
   }
 
   /**
-   * International Student? - Boolean
+   * Is the student from outside of the US
+   * @param $data
+   * @return bool
    */
-  public function setInternationalStudent(){}
-  public function getInternationalStudent(){}
+  public function setInternationalStudent($data){
+    if($this->validateInternationalStudent($data)){
+      $this->internationalStudent= $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getInternationalStudent(){
+    if(isset($this->internationalStudent)){
+      return $this->internationalStudent;
+    } else {
+      return "";
+    }
+  }
   public function validateInternationalStudent($data){
 
-    if (filter_var($data, FILTER_VALIDATE_BOOLEAN)) {
+    if ($data == "TRUE" || $data == "FALSE") {
       return true;
     }
     return false;
   }
 
   /**
-   * Military Status
+   * The requester's military status.
+   * @param $data
+   * @return bool
    */
-  public function setVeteranStatus(){}
-  public function getVeteranStatus(){}
+  public function setVeteranStatus($data){
+    if($this->validateVeteranStatus($data)){
+      $this->veteranStatus = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getVeteranStatus(){
+    if(isset($this->veteranStatus)){
+      return $this->veteranStatus;
+    } else {
+      return "";
+    }
+  }
   public function validateVeteranStatus($data){
 
-    if (filter_var($data, FILTER_VALIDATE_BOOLEAN)) {
+    if (in_array($data, ["Spouse/Dependent", "Veteran", "None"])) {
       return true;
     }
     return false;

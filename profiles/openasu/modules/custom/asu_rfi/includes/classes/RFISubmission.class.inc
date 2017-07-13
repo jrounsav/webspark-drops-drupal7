@@ -5,6 +5,19 @@
  */
 class RFISubmission {
 
+  private $prodTestFlag;
+  private $college;
+  private $program;
+  private $prospectLevel;
+  private $campus;
+  private $sourceID;
+  private $baseURL;
+  private $firstName;
+  private $lastName;
+  private $email;
+  private $phone;
+  private $studentType;
+
   /**
    * Required across all types of submissions
    * @var array
@@ -77,8 +90,9 @@ class RFISubmission {
 
   /**
    * Verify that the required fields are included.
-   * @param $data
-   * @return array
+   * @param $response
+   * @return mixed
+   *
    * TODO - expand this to return all missing fields
    */
   public function validateRequirements($response){
@@ -101,9 +115,24 @@ class RFISubmission {
    */
   /**
    * Testing? Boolean, On/Off
+   * @param $data
+   * @return bool
    */
-  public function setProdTestFlag(){}
-  public function getProdTestFlag(){}
+  public function setProdTestFlag($data){
+    if($this->validateProdTestFlag($data)){
+      $this->prodTestFlag = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getProdTestFlag(){
+    if(isset($this->prodTestFlag)){
+      return $this->prodTestFlag;
+    } else {
+      return false;
+    }
+  }
   public function validateProdTestFlag($data){
 
     if (filter_var($data, FILTER_VALIDATE_BOOLEAN)) {
@@ -115,9 +144,24 @@ class RFISubmission {
 
   /**
    * College Code
+   * @param $data
+   * @return bool
    */
-  public function setCollege(){}
-  public function getCollege(){}
+  public function setCollege($data){
+    if($this->validateCollege($data)){
+      $this->college = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getCollege(){
+    if(isset($this->college)){
+      return $this->college;
+    } else {
+      return false;
+    }
+  }
   public function validateCollege($data){
 
     if (!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬-]/', $data))
@@ -131,10 +175,25 @@ class RFISubmission {
   }
 
   /**
-   * verify program exists locally
+   * ASU managed program code
+   * @param $data
+   * @return bool
    */
-  public function setProgram(){}
-  public function getProgram(){}
+  public function setProgram($data){
+    if($this->validateProgram($data)){
+      $this->program = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getProgram(){
+    if(isset($this->program)){
+      return $this->program;
+    } else {
+      return false;
+    }
+  }
   public function validateProgram($data){
 
     // So special characters allowed
@@ -149,10 +208,25 @@ class RFISubmission {
   }
 
   /**
-   * Grad/Undergrad
+   * Student Prospect Level. Graduate or Undergraduate
+   * @param $data
+   * @return bool
    */
-  public function setProspectLevel(){}
-  public function getProspectLevel(){}
+  public function setProspectLevel($data){
+    if($this->validateProspectLevel($data)){
+      $this->prospectLevel = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getProspectLevel(){
+    if(isset($this->prospectLevel)){
+      return $this->prospectLevel;
+    } else {
+      return false;
+    }
+  }
   public function validateProspectLevel($data){
 
     if($data == "G" || $data == "UG"){
@@ -163,10 +237,25 @@ class RFISubmission {
   }
 
   /**
-   * Location - dependent on program & prospect level
+   * Campus code
+   * @param $data
+   * @return bool
    */
-  public function setCampus(){}
-  public function getCampus(){}
+  public function setCampus($data){
+    if($this->validateCampus($data)){
+      $this->campus = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getCampus(){
+    if(isset($this->campus)){
+      return $this->campus;
+    } else {
+      return false;
+    }
+  }
   public function validateCampus($data){
 
     if (!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬-]|[[0-9]/', $data))
@@ -181,11 +270,25 @@ class RFISubmission {
 
   /**
    * Source - String. Domain-TypeOfForm-UG/G
-   * Needs to be a domain with  "-RFIAPI" appended
-   * TODO - Need to find a way to append UG/G
+   * @param $data
+   * @return bool
+   * TODO - Replace validation here with Domain-TypeOfForm-UG/G - TypeOfForm will represent whether its an API call
    */
-  public function setSourceID(){}
-  public function getSourceID(){}
+  public function setSourceID($data){
+    if($this->validateSourceID($data)){
+      $this->sourceID = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getSourceID(){
+    if(isset($this->sourceID)){
+      return $this->sourceID;
+    } else {
+      return false;
+    }
+  }
   public function validateSourceID($data){
 
     if(!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬]/', $data) && strpos($data, "-RFIAPI")){
@@ -196,21 +299,53 @@ class RFISubmission {
   }
 
   /**
-   * Base URL - String
-   * TODO - Exclude and populate on backend - Maybe allow override?
+   * Website's Base URL, for submission validation to the middleware
+   * @param $data
+   * @return bool
    */
-  public function setBaseURL(){}
-  public function getBaseURL(){}
-  public function validateBaseURL(){
+  public function setBaseURL($data){
+    if($this->validateBaseURL($data)){
+      $this->baseURL = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getBaseURL(){
+    if(isset($this->baseURL)){
+      return $this->baseURL;
+    } else {
+      return false;
+    }
+  }
+  public function validateBaseURL($data){
 
+    if ($data){
+      return false;
+    }
     return false;
   }
 
   /**
-   * String
+   * First name of requester
+   * @param $data
+   * @return bool
    */
-  public function setFirstName(){}
-  public function getFirstName(){}
+  public function setFirstName($data){
+    if($this->validateFirstName($data)){
+      $this->firstName= $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getFirstName(){
+    if(isset($this->firstName)){
+      return $this->firstName;
+    } else {
+      return false;
+    }
+  }
   public function validateFirstName($data){
 
     if (!preg_match('/[\^£$%&*()}{@#~?><>,|=_+¬]|[[0-9]/', $data))
@@ -223,10 +358,25 @@ class RFISubmission {
   }
 
   /**
-   * String
+   * Requester Last Name
+   * @param $data
+   * @return bool
    */
-  public function setLastName(){}
-  public function getLastName(){}
+  public function setLastName($data){
+    if($this->validateLastName($data)){
+      $this->lastName = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getLastName(){
+    if(isset($this->lastName)){
+      return $this->lastName;
+    } else {
+      return false;
+    }
+  }
   public function validateLastName($data){
 
     if (!preg_match('/[\^£$%&*()}{@#~?><>,|=_+¬]|[[0-9]/', $data))
@@ -239,10 +389,25 @@ class RFISubmission {
   }
 
   /**
-   * Verify form of email
+   * Requester's Email address
+   * @param $data
+   * @return bool
    */
-  public function setEmail(){}
-  public function getEmail(){}
+  public function setEmail($data){
+    if($this->validateEmail($data)){
+      $this->email = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getEmail(){
+    if(isset($this->email)){
+      return $this->email;
+    } else {
+      return false;
+    }
+  }
   public function validateEmail($data){
 
     if (filter_var($data, FILTER_VALIDATE_EMAIL)) {
@@ -255,10 +420,24 @@ class RFISubmission {
   }
 
   /**
-   * Verify phone number. No letters
+   * Requester's phone number.
+   * @param $data
+   * @return bool
    */
-  public function setPhone(){}
-  public function getPhone(){}
+  public function setPhone($data){
+    if($this->validatePhone($data)){
+      $this->phone = $data;
+    } else {
+      return false;
+    }
+  }
+  public function getPhone(){
+    if(isset($this->phone)){
+      return $this->phone;
+    } else {
+      return false;
+    }
+  }
   public function validatePhone($data){
 
     // Some coutries use + and x in their phone numbers. Must allow
@@ -272,10 +451,25 @@ class RFISubmission {
   }
 
   /**
-   * Returning, Transfer, Current, Freshman
+   * The type of student with respect to their Higher Ed history. Freshman, Transfer, Readmission
+   * @param $data
+   * @return bool
    */
-  public function setStudentType(){}
-  public function getStudentType(){}
+  public function setStudentType($data){
+    if($this->validateStudentType($data)){
+      $this->studentType = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getStudentType(){
+    if(isset($this->studentType)){
+      return $this->studentType;
+    } else {
+      return false;
+    }
+  }
   public function validateStudentType($data){
 
     if($data == "First Time Freshman" || $data == "Transfer" || $data == "Readmission"){
@@ -286,7 +480,7 @@ class RFISubmission {
   }
 
   /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   * TODO - Figure out best way to get better Semester Codes & Location Information.
+   * TODO - Confirm that the API calls work on client sites. If so, hook into DB values for data validation
    * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**
@@ -355,7 +549,7 @@ class RFISubmission {
     return false;
   }
   /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   * TODO END - Figure out best way to get better Semester Codes & Location Information.
+   * TODO - Confirm that the API calls work on client sites. If so, hook into DB values for data validation
    * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**

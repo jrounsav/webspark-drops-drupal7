@@ -6,6 +6,8 @@
 class RFISubmission {
 
   private $prodTestFlag;
+  private $nodeID;
+  private $IPaddress;
   private $college;
   private $program;
   private $prospectLevel;
@@ -37,6 +39,8 @@ class RFISubmission {
 
   /**
    * Validate whether all of the submitted data points meet requirements
+   * @param $data
+   * @return array|mixed
    */
   public function validate($data){
 
@@ -142,6 +146,64 @@ class RFISubmission {
   public function validateProdTestFlag($data){
 
     if ($data == "TRUE" || $data == "FALSE") {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Site node ID
+   * @param $data
+   * @return bool
+   */
+  public function setNodeID($data){
+    if($this->validateNodeID($data)){
+      $this->nodeID = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getNodeID(){
+    if(isset($this->nodeID)){
+      return $this->nodeID;
+    } else {
+      return "";
+    }
+  }
+  public function validateNodeID($data){
+
+    if (is_numeric($data)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Submitter's IP Address
+   * @param $data
+   * @return bool
+   */
+  public function setIPAddress($data){
+    if($this->validateIPAddress($data)){
+      $this->IPaddress = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getIPAddress(){
+    if(isset($this->IPaddress)){
+      return $this->IPaddress;
+    } else {
+      return "";
+    }
+  }
+  public function validateIPAddress($data){
+
+    if (is_numeric($data)) {
       return true;
     }
 

@@ -7,7 +7,25 @@
  */
 class submissionHandler {
 
-  private $submission; // RFISubmission Object
+  /**
+   * @var RFISubmission Object
+   */
+  private $submission;
+  /**
+   * @var Array of ASUOnline managed degrees
+   */
+  private $onlineCatalog;
+
+  /**
+   * @var String authorization key for the middleware.
+   */
+  private $authKey;
+
+  /** ================================================
+   * Middleware to RFISubmission Field Mappings.
+   * Field Requirements between differ, so we need to map the standard RFISubmission fields to the necessary
+   * middleware's field names before posting.
+   *  ================================================ */
   /**
    * Map Graduate Middleware => RFISubmission
    * @var array
@@ -26,19 +44,67 @@ class submissionHandler {
     'sourceid' => "NodeID",
   );
 
-  //TODO - Add Undergraduate field map
+  /**
+   * Map Undergraduate Middleware => RFISubmission
+   * @var array
+   */
+  private $UndergraduateMap = array(
+    'source_id' => "SourceID",
+    'base_url' => "BaseURL",
+    'prod_test_flag' => "ProdTestFlag",
+    'first_name' => "FirstName",
+    'last_name' => "LastName",
+    'prospect_level' => 'ProspectLevelFull',
+    'student_type' => "StudentType",
+    'program' => "Program",
+    'starting_semester' => "StartingSemester",
+    'email' => "Email",
+    'zip' => "Zipcode",
+    'phone' => "Phone",
+    'birth_date' => "Birthdate",
+    'country' => "Country",
+    'sms' => "SMS",
+    'comments' => "Comments",
+    'street' => "Street",
+    'city' => "City",
+    'state' => "State",
+    'intnl_student' => "InternationalStudent",
+    'veteran_status' => "VeteranStatus",
+    'campus' => "Campus",
+  );
 
-  // TODO - When building POST, loop through the field maps checking with "isset" to build out body.
-  // TODO - Fail the process if !isset
+  /**
+   * Map ASUOnline Middleware => RFISubmission
+   * @var array
+   */
+  private $OnlineMap = array(
+    'first_name' => "FirstName",
+    'last_name' => "LastName",
+    'program' => "College-Program",
+    'email' => "Email",
+    'phone' => "Phone",
+    'prod_test_flag' => "ProdTestFlag",
+    'base_url' => "BaseURL",
+    'remote_nid' => "NodeID",
+    'ldetect_v' => "IPAddress",
+    'campaign' => "SourceID", // TODO - Should I break this out into more fields? I think I need a form type
+    'sourceid' => "NodeID", // TODO - Implement some sort of UUID setter getter
+  );
+
+  /** ================================================
+   * RFI Submission Handler Initialization Functions
+   *  ================================================ */
 
   /**
    * submissionHandler constructor.
    * @param $submission_object
    * @throws Exception
    */
-  public function __construct($submission_object){
+  public function __construct($submission_object, $onlineCatalog, $authKey){
     if (!$this->setSubmission($submission_object)){
       throw new Exception("The Submission Handler constructor can only accept an RFISubmission");
+    } else if (!$this->setOnlineCatalog($onlineCatalog)){
+      throw new Exception("The Submission Handler failed to set the Online Catalog");
     }
   }
 
@@ -50,8 +116,15 @@ class submissionHandler {
    * @throws Exception
    */
   public function setSubmission($data){
-    if(is_a($data, "RFISubmission")){
+    if($this->validateSubmission($data)){
       $this->submission = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function validateSubmission($data){
+    if(is_a($data, "RFISubmission")){
       return true;
     } else {
       return false;
@@ -59,8 +132,59 @@ class submissionHandler {
   }
 
   /**
+   * Set handler's list of managed online programs. Necessary to determine submission data route.
+   * can call asu_rfi_parse_programs() and pass data in constructor.
+   * MUST be set before attempting to submit Online request.
+   * @param $data
+   * @return bool
+   */
+  public function setOnlineCatalog($data){
+    if($this->validateOnlineCatalog($data)){
+      $this->onlineCatalog = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function validateOnlineCatalog($data){
+    if(is_array($data)){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Middleware Authorization Key
+   * This is necessary for posts to the various middleware endpoints.
+   * @param $data
+   * @return bool
+   */
+  public function setAuthKey($data){
+    if($this->validateAuthKey($data)){
+      $this->authKey = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function validateAuthKey($data){
+    if(is_string($data)){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /** ================================================
+   * RFI Submission Handler Submit Functions
+   * Running "submit" after the object is initialized with a submission object
+   * and the Online Managed catalog should build out the submission body and
+   * send it to the correct endpoint
+   *  ================================================ */
+
+  /**
    * Using the configurations, send the RFI to it's destination
-   * TODO - Map RFISubmission fields to correct POST fields.
    * TODO - POST data.
    */
   public function submit(){
@@ -68,10 +192,28 @@ class submissionHandler {
 
     }
   }
+
+  public function determineRoute(){
+
+    $campus = $this->submission->getCampus();
+    $program = $this->submission->getProgram();
+    $onlineCatalog = $this->onlineCatalog;
+
+
+    // TODO - Is the campus online?
+      // if so, is it online managed?
+        // if so, TODO - Route to Online
+
+      // Else, TODO - is the user a Graduate or Undergraduate?
+        // TODO - Route based on prospect level
+
+    // Return route
+  }
+
   /**
    * Set the request headers & destination url
    */
-  public function setPOST($url, $body){
+  public function setPOSTHeaders($url, $body){
 
     /*$options = array(
       CURLOPT_URL => $url,
@@ -83,80 +225,97 @@ class submissionHandler {
       CURLOPT_SSL_VERIFYPEER => FALSE,
     );
 
-
-
     curl_setopt($curl, CURLOPT_HEADER, FALSE); //Set this to false to remove informational headers*/
   }
 
-  public function setURL($prospectLevel){
+  /**
+   * Builds the post body by generating the function names in the RFISubmission class.
+   * @param $map
+   * @return array|bool
+   */
+  public function setPOSTBody($map){
+    $body = [];
 
-    switch ($prospectLevel) {
+    foreach($map as $field => $functionBase){
+      $bases = explode("-", $functionBase);
+      $full = "";
+
+      for($i = 0; $i < sizeof($bases); $i++) {
+        $function = "get" . $bases[$i];
+
+        if(!$this->submission->$full()){
+          return false;
+        }
+
+        $response = $this->submission->$function();
+        $full .= $response;
+        if($i < sizeof($bases) - 1 && sizeof($bases) > 1){
+          $full .= "-";
+        }
+      }
+
+      $body[$field] = $full;
+    }
+
+    return $body;
+  }
+
+
+  /**
+   * Build the destination URL for the submission
+   * @param $route
+   * @param $data
+   * @return bool|string
+   *
+   * TODO - Support test endpoints at the root of the class
+   */
+  public function followRoute($route, $data){
+    $url = false;
+    switch ($route) {
       case "G":
-        /*$url = "https://webforms.asu.edu/asu_edplus_middleware/submit/$fieldHash";*/
+          $url = 'https://requestinfo.asu.edu/prospect_form_post';
         break;
       case "UG":
-        /*$url = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi/$hashkey/$nodeid";*/
+        if($this->submission->getNodeID()){
+          $nodeid = $this->submission->getNodeID();
+          $hash = $this->generateUndergradHash($this->submission->getNodeID());
+          $url = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi/$hash/$nodeid";
+        }
+        break;
+      case "O":
+        if(!empty($data)) {
+          $hash = $this->generateOnlineHash($data);
+          $url = "https://webforms.asu.edu/asu_edplus_middleware/submit/$hash";
+        }
         break;
       default:
-
+        $url = false;
         break;
     }
+    return $url;
 
   }
 
-  public function generateGradHash($authKey, $data){
+
+  /** ================================================
+   * Middleware Hash Generators
+   * The middleware endpoints utilize different hashing processes.
+   *  ================================================ */
+
+  public function generateUndergradHash($nodeid){
+    $authKey = $this->authKey;
+    $hash = sha1($authKey . '+' . $nodeid);
+
+    return $hash;
+  }
+
+  public function generateOnlineHash($data){
+    $authKey = $this->authKey;
     $submission_data = json_encode($data);
 
     $hash = sha1($authKey . '+' . $submission_data);
 
     return $hash;
   }
-
-  public function generateUndergradHash($authKey, $nodeid){
-    $hash = sha1($authKey . '+' . $nodeid);
-
-    return $hash;
-  }
-
-  public function buildUndergradBody(){
-    /*$fields = array(
-      'source_id' => $source,
-      'base_url' => $domain,
-      'prod_test_flag' => $form_mode,
-      'first_name' => $fname,
-      'last_name' => $lname,
-      'prospect_level' => 'Undergraduate',
-      'student_type' => $data['student_type'],
-      'program' => $prog_code,
-      'starting_semester' => $data['start_date'],
-      'email' => $email,
-      'zip' => $data['zipcode'],
-      'phone' => $phone,
-      'birth_date' => $dob,
-      'country' => $country,
-      'sms' => $mobile,
-      'comments' => $comment,
-      'prod_test_flag' => $form_mode,
-      'street' => $address,
-      'city' => $city,
-      'state' => $state,
-      'intnl_student' => $data['citizenship'],
-      'veteran_status' => $military,
-      'campus' => $campus,
-      'location' => $location,
-    );*/
-  }
-
-  public function buildGradBody(){
-
-
-  }
-  /**
-   * Configure fields to be used by POST Functions
-   */
-
-
-
-
 
 }

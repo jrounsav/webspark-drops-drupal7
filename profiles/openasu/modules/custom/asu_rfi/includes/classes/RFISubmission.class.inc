@@ -29,7 +29,7 @@ class RFISubmission {
    * Required across all types of submissions
    * @var array
    */
-  public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID");
+  public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID", "College");
 
   // TODO - decide what should happen in the constructor, if anything
   public function __construct()
@@ -140,7 +140,7 @@ class RFISubmission {
     if(isset($this->prodTestFlag)){
       return $this->prodTestFlag;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateProdTestFlag($data){
@@ -169,7 +169,7 @@ class RFISubmission {
     if(isset($this->nodeID)){
       return $this->nodeID;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateNodeID($data){
@@ -198,7 +198,7 @@ class RFISubmission {
     if(isset($this->IPaddress)){
       return $this->IPaddress;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateIPAddress($data){
@@ -227,7 +227,7 @@ class RFISubmission {
     if(isset($this->college)){
       return $this->college;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateCollege($data){
@@ -259,7 +259,7 @@ class RFISubmission {
     if(isset($this->program)){
       return $this->program;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateProgram($data){
@@ -288,13 +288,33 @@ class RFISubmission {
       return false;
     }
   }
+
   public function getProspectLevel(){
     if(isset($this->prospectLevel)){
       return $this->prospectLevel;
     } else {
-      return "";
+      return false;
     }
   }
+
+  public function getProspectLevelFull(){
+    if(isset($this->prospectLevel)){
+      switch ($this->prospectLevel) {
+        case "G":
+          return "Graduate";
+          break;
+        case "UG":
+          return "Undergraduate";
+          break;
+        default:
+          return false;
+          break;
+      }
+    } else {
+      return false;
+    }
+  }
+
   public function validateProspectLevel($data){
 
     if($data == "G" || $data == "UG"){
@@ -321,7 +341,7 @@ class RFISubmission {
     if(isset($this->campus)){
       return $this->campus;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateCampus($data){
@@ -354,7 +374,7 @@ class RFISubmission {
     if(isset($this->sourceID)){
       return $this->sourceID;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateSourceID($data){
@@ -383,7 +403,7 @@ class RFISubmission {
     if(isset($this->baseURL)){
       return $this->baseURL;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateBaseURL($data){
@@ -411,7 +431,7 @@ class RFISubmission {
     if(isset($this->firstName)){
       return $this->firstName;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateFirstName($data){
@@ -442,7 +462,7 @@ class RFISubmission {
     if(isset($this->lastName)){
       return $this->lastName;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateLastName($data){
@@ -473,7 +493,7 @@ class RFISubmission {
     if(isset($this->email)){
       return $this->email;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateEmail($data){
@@ -504,7 +524,7 @@ class RFISubmission {
     if(isset($this->phone)){
       return $this->phone;
     } else {
-      return "";
+      return false;
     }
   }
   public function validatePhone($data){
@@ -536,7 +556,7 @@ class RFISubmission {
     if(isset($this->studentType)){
       return $this->studentType;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateStudentType($data){
@@ -638,7 +658,7 @@ class RFISubmission {
     if(isset($this->birthdate)){
       return $this->birthdate;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateBirthdate($data){
@@ -667,7 +687,7 @@ class RFISubmission {
     if(isset($this->SMS)){
       return $this->SMS;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateSMS($data){
@@ -699,7 +719,7 @@ class RFISubmission {
     if(isset($this->comments)){
       return $this->comments;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateComments($data){
@@ -727,7 +747,7 @@ class RFISubmission {
     if(isset($this->internationalStudent)){
       return $this->internationalStudent;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateInternationalStudent($data){
@@ -755,7 +775,7 @@ class RFISubmission {
     if(isset($this->veteranStatus)){
       return $this->veteranStatus;
     } else {
-      return "";
+      return false;
     }
   }
   public function validateVeteranStatus($data){

@@ -184,38 +184,104 @@ class submissionHandler {
    *  ================================================ */
 
   /**
-   * Using the configurations, send the RFI to it's destination
-   * TODO - POST data.
+   * Using the submission data,prepare and submit the request.
+   * @return array|bool
    */
   public function submit(){
     if(isset($this->submission)){
+      $route = $this->determineRoute();
+      switch ($route) {
+        case "G":
+          $map = $this->GraduateMap;
+          break;
+        case "UG":
+          $map = $this->UndergraduateMap;
+          break;
+        case "O":
+          $map = $this->OnlineMap;
+          break;
+        default:
+          return false;
+          break;
+      }
+      $body = $this->setPOSTBody($map);
+      $url = $this->generateURLForRoute($route, $body);
+      $options = $this->setPOSTOptions($url, $body);
 
+      $response = $this->curl($options);
+
+      return $response;
     }
   }
 
+  /**
+   * Run cURL against the middleware endpoint, with the submission data, and return the response and code
+   * @param $options
+   * @return array
+   */
+  public function curl($options){
+
+    $values = [];
+
+    $ch = curl_init();
+
+    curl_setopt_array($ch, $options);
+
+    $response = curl_exec($ch);
+    $curl_code = curl_getinfo($ch);
+
+    curl_close($ch);
+
+    array_push($values, $response, $curl_code);
+
+    return $values;
+
+  }
+
+  // Needs thorough testing
+  /**
+   * @return bool
+   */
   public function determineRoute(){
 
+    $route = false;
     $campus = $this->submission->getCampus();
     $program = $this->submission->getProgram();
-    $onlineCatalog = $this->onlineCatalog;
 
-
-    // TODO - Is the campus online?
-      // if so, is it online managed?
-        // if so, TODO - Route to Online
-
-      // Else, TODO - is the user a Graduate or Undergraduate?
-        // TODO - Route based on prospect level
-
-    // Return route
+    if($campus == "ONLNE" && $this->checkOnlineManaged($program)){
+      return "O";
+    } else {
+      return $this->submission->getProspectLevel();
+    }
   }
 
   /**
-   * Set the request headers & destination url
+   * Check whether a program is in the provided list of ASUOnline managed programs.
+   * @param $program
+   * @return bool
    */
-  public function setPOSTHeaders($url, $body){
+  public function checkOnlineManaged($program)
+  {
 
-    /*$options = array(
+    if (isset($this->onlineCatalog)) {
+      foreach ($this->onlineCatalog as $item) {
+        if ($program == $item->plancode && $item->crmdestination !== "asu") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Build out the POST options for the cURL to be utilized
+   * @param $url
+   * @param $body
+   * @return array
+   */
+  public function setPOSTOptions($url, $body){
+
+    $options = array(
       CURLOPT_URL => $url,
       CURLOPT_POST => 1,
       CURLOPT_POSTFIELDS => $body,
@@ -223,9 +289,11 @@ class submissionHandler {
       CURLOPT_HTTPHEADER => array('Content-Type: text/json'),
       CURLOPT_SSLVERSION => 1,
       CURLOPT_SSL_VERIFYPEER => FALSE,
+      CURLOPT_HEADER => FALSE
     );
 
-    curl_setopt($curl, CURLOPT_HEADER, FALSE); //Set this to false to remove informational headers*/
+    return $options;
+
   }
 
   /**
@@ -269,7 +337,7 @@ class submissionHandler {
    *
    * TODO - Support test endpoints at the root of the class
    */
-  public function followRoute($route, $data){
+  public function generateURLForRoute($route, $data){
     $url = false;
     switch ($route) {
       case "G":

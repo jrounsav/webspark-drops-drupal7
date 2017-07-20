@@ -12,7 +12,7 @@ class submissionHandler {
    */
   private $submission;
   /**
-   * @var Array of ASUOnline managed degrees
+   * @var array of ASUOnline managed degrees
    */
   private $onlineCatalog;
 

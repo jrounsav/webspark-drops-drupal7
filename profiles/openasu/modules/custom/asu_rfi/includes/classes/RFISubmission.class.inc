@@ -31,12 +31,6 @@ class RFISubmission {
    */
   public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID", "College");
 
-  // TODO - decide what should happen in the constructor, if anything
-  public function __construct()
-  {
-
-  }
-
   /**
    * Validate whether all of the submitted data points meet requirements
    * @param $data
@@ -569,7 +563,9 @@ class RFISubmission {
   }
 
   /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   * TODO - Confirm that the API calls work on client sites. If so, hook into DB values for data validation
+   * The semester codes, Countries, & States need to be validated against a list of acceptable options.
+   *
+   * Everything in this block is contingent on a non-submission resource.
    * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**

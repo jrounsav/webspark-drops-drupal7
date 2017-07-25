@@ -24,6 +24,18 @@ class RFISubmission {
   private $comments;
   private $internationalStudent;
   private $veteranStatus;
+  private $startingSemester;
+  private $country;
+  private $zipcode;
+  private $street;
+  private $city;
+
+  /**
+   * SFDataManager object reference
+   * Necessary if location values are being utilized
+   * @var
+   */
+  private $SFDataManager;
 
   /**
    * Required across all types of submissions
@@ -112,6 +124,34 @@ class RFISubmission {
     return $response;
 
   }
+
+  /**
+   * Use the SF data manager with the class.
+   * This is necessary in order to verify whether the data values passed in are acceptable.
+   *
+   * Note that the SFDataManager is not platform agnostic, and that it may be necessary to update
+   * it when making the migration to Drupal 8.
+   *
+   * @param $data
+   * @return bool
+   */
+  public function setSFDataManager($data){
+    if($this->validateSFDataManger($data)){
+      $this->SFDataManager = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public function validateSFDataManger($data){
+    if(is_a($data, "SFDataManager")){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 
   /**
    * ---- ---- ---- VALIDATE/SET/GET Single Fields --- --- --- --- ---
@@ -355,7 +395,6 @@ class RFISubmission {
    * Source - String. Domain-TypeOfForm-UG/G
    * @param $data
    * @return bool
-   * TODO - Replace validation here with Domain-TypeOfForm-UG/G - TypeOfForm will represent whether its an API call
    */
   public function setSourceID($data){
     if($this->validateSourceID($data)){
@@ -374,7 +413,7 @@ class RFISubmission {
   }
   public function validateSourceID($data){
 
-    if(!preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬]/', $data) && strpos($data, "-RFIAPI")){
+    if(preg_match('/^[a-zA-Z0-9\.\-_]+\.asu\.edu\-([a-zA-Z0-9\.\/\?\:@\-_=#]+)\-(G|UG)$/', $data)){
       return true;
     }
 
@@ -563,80 +602,82 @@ class RFISubmission {
     return false;
   }
 
-  /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   * The semester codes, Countries, & States need to be validated against a list of acceptable options.
-   *
-   * Everything in this block is contingent on a non-submission resource.
-   * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  /**
+   * Zipcode
+   * Assumes US since they are only required by Salesforce when the country is US.
+   * @param $data
+   * @return bool
+   */
+  public function setZipcode($data){
+    if($this->validateZipcode($data)){
+      $this->zipcode = $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getZipcode(){
+    if(isset($this->zipcode)){
+      return $this->zipcode;
+    } else {
+      return false;
+    }
+  }
+  public function validateZipcode($data){
+
+    return preg_match('/^[0-9]{5}([- ]?[0-9]{4})?$/', $data);
+  }
 
   /**
-   * Starting Semester
-   * TODO - validate form of semester code. Not accepting for now
+   * First line of requester's street address
+   * Encodes special characters & length must be less than 255
+   * @param $data
+   * @return bool
    */
-  public function setStartingSemester(){}
-  public function getStartingSemester(){}
-  public function validateStartingSemester(){
+  public function setStreet($data){
+    if($this->validateStreet($data)){
+      $this->street =  htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getStreet(){
+    if(isset($this->street)){
+      return $this->street;
+    } else {
+      return false;
+    }
+  }
+  public function validateStreet($data){
 
+    if(!empty($data) && strlen($data) < 255){
+      return TRUE;
+    }
     return false;
   }
 
   /**
-   * Country - Tie in with SF countries somehow
-   * TODO - validate against list of countries. Not accepting for now
+   * The City of the requester. Must be less than 32 characters
+   * @param $data
+   * @return bool
    */
-  public function setCountry(){}
-  public function getCountry(){}
-  public function validateCountry(){
-
-    return false;
+  public function setCity($data){
+    if($this->validateCity($data)){
+      $this->city = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+      return true;
+    } else {
+      return false;
+    }
   }
-
-  /**
-   * Zip Code
-   * TODO - validate zip form. Not accepting for now
-   */
-  public function setZipcode(){}
-  public function getZipcode(){}
-  public function validateZipcode(){
-
-    return false;
-  }
-
-  /**
-   * Street
-   * TODO - Validate string, extract improper special characters. Not accepting for now
-   */
-  public function setStreet(){}
-  public function getStreet(){}
-  public function validateStreet(){
-
-    return false;
-  }
-
-  /**
-   * City
-   * TODO - Validate string, extract improper special characters. Not accepting for now
-   */
-  public function setCity(){}
   public function getCity(){}
-  public function validateCity(){
+  public function validateCity($data){
 
+    if(!empty($data) && strlen($data) < 32){
+      return TRUE;
+    }
     return false;
   }
-
-  /**
-   * State
-   * TODO - Validate string, extract improper special characters. Not accepting for now
-   */
-  public function setState(){}
-  public function getState(){}
-  public function validateState(){
-
-    return false;
-  }
-  /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   * TODO - Confirm that the API calls work on client sites. If so, hook into DB values for data validation
-   * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**
    * Requester's date of birth
@@ -706,7 +747,7 @@ class RFISubmission {
    */
   public function setComments($data){
     if($this->validateComments($data)){
-      $this->comments = $data;
+      $this->comments = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
       return true;
     } else {
       return false;
@@ -782,6 +823,106 @@ class RFISubmission {
     }
     return false;
   }
+
+  /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   * The semester codes, Countries, & States need to be validated against a list of acceptable options.
+   *
+   * Everything in this block is contingent on an external class called SFDataManager. If a reference to an object of that class is not defined
+   * then these fields will not be accepted
+   * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+  /**
+   * Starting Semester Code.
+   * Salesforce managed value relies on the SFDataManager. If one has not been assigned then it will fail.
+   */
+  public function setStartingSemester($data){
+    if($this->validateStartingSemester($data)){
+      $this->startingSemester = $data;
+      return true;
+    }
+    return false;
+  }
+  public function getStartingSemester(){
+    if(isset($this->startingSemester)){
+      return $this->startingSemester;
+    } else {
+      return false;
+    }
+  }
+  public function validateStartingSemester($data){
+    if(isset($this->SFDataManager)){
+      $localSemesters = $this->SFDataManager->getSemesters();
+
+      if(isset($localSemesters[$data])){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Country Code
+   * Salesforce managed value relies on the SFDataManager. If one has not been assigned then it will fail.
+   */
+  public function setCountry($data){
+    if($this->validateCountry($data)){
+      $this->country= $data;
+      return true;
+    }
+    return false;
+  }
+  public function getCountry(){
+    if(isset($this->country)){
+      return $this->country;
+    } else {
+      return false;
+    }
+  }
+  public function validateCountry($data){
+
+    if(isset($this->SFDataManager)){
+      $localCountries = $this->SFDataManager->getCountries();
+
+      if(isset($localCountries[$data])){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * State Code
+   * Salesforce managed value relies on the SFDataManager. If one has not been assigned then it will fail.
+   */
+  public function setState($data){
+    if($this->validateState($data)){
+      $this->state = $data;
+      return true;
+    }
+    return false;
+  }
+  public function getState(){
+    if(isset($this->state)){
+      return $this->state;
+    } else {
+      return false;
+    }
+  }
+  public function validateState($data){
+
+    if(isset($this->SFDataManager)){
+      $localStates = $this->SFDataManager->getStates();
+
+      if(isset($localStates[$data])){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   * END of block that contains values defined in Salesforce.
+   * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
   /**
    * ---- ---- ---- ----  ---- ---- ---- ----

@@ -43,13 +43,19 @@ class SFDataManager {
     return $result;
   }
 
-  /*
-   * Handle Country data
+  /**
+   * Verify whether the Country table exists
+   * @return bool
    */
   public function checkCountryTableExists(){
     $val = db_table_exists("asu_rfi_countries");
     return $val;
   }
+
+  /**
+   * Using the defined SF resources, pull country data from the middleware
+   * @return mixed
+   */
   public function pullCountries(){
     $type = 'fieldinfo';
     $name = 'country';
@@ -62,6 +68,10 @@ class SFDataManager {
     return $data;
   }
 
+  /**
+   * Synchronize the local list of countries with the ones recognized by Salesforce
+   * @return bool
+   */
   public function syncCountries(){
 
     if($this->checkCountryTableExists()){
@@ -93,6 +103,10 @@ class SFDataManager {
     return false;
   }
 
+  /**
+   * Return the labels and associated codes of the country information being stored locally
+   * @return mixed
+   */
   public function getCountries(){
     $result = db_select('asu_rfi_countries', 'c')
       ->fields('c')
@@ -102,8 +116,9 @@ class SFDataManager {
     return $result;
   }
 
-  /*
-   * Handle Semester data
+  /**
+   * Verify that the semester table exists in the database
+   * @return bool
    */
   public function checkSemesterTableExists(){
     $val = db_table_exists("asu_rfi_sem_dates");
@@ -122,6 +137,10 @@ class SFDataManager {
     return $data;
   }
 
+  /**
+   * Synchronize the locally stored semester information with the information maintained in Salesforce
+   * @return bool
+   */
   public function syncSemesters(){
 
     if($this->checkSemesterTableExists()){
@@ -153,6 +172,11 @@ class SFDataManager {
     return false;
   }
 
+  /**
+   * Return all of the semester information being held in the database
+   * @return mixed
+   *  TODO - add a filter option to exclusively return the semesters that have NOT passed.
+   */
   public function getSemesters(){
     $result = db_select('asu_rfi_sem_dates', 's')
       ->fields('s')
@@ -162,13 +186,19 @@ class SFDataManager {
     return $result;
   }
 
-  /*
-   * Handle State data
+  /**
+   * Verify that the states table exists to store state information pulled from the middleware
+   * @return bool
    */
   public function checkStateTableExists(){
     $val = db_table_exists("asu_rfi_states_list");
     return $val;
   }
+
+  /**
+   * Pull a list of States recognized by Salesforce. Limited to the US and Canada
+   * @return mixed
+   */
   public function pullStates(){
     $type = 'fieldinfo';
     $name = 'state_province';
@@ -180,6 +210,11 @@ class SFDataManager {
     }
     return $data;
   }
+
+  /**
+   * Synchronize the locally managed list of States and the ones returned by Salesforce
+   * @return bool
+   */
   public function syncStates(){
     if($this->checkStateTableExists()){
       $MWData = $this->pullStates();
@@ -209,6 +244,11 @@ class SFDataManager {
     }
     return false;
   }
+
+  /**
+   * Return all of the locally stored State codes and Names
+   * @return mixed
+   */
   public function getStates(){
     $result = db_select('asu_rfi_states_list', 's')
       ->fields('s')

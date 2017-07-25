@@ -70,7 +70,7 @@ class SFDataManager {
 
   /**
    * Synchronize the local list of countries with the ones recognized by Salesforce
-   * @return bool
+   * @return bool True if successfully sync'd or if no sync is necessary
    */
   public function syncCountries(){
 
@@ -139,7 +139,7 @@ class SFDataManager {
 
   /**
    * Synchronize the locally stored semester information with the information maintained in Salesforce
-   * @return bool
+   * @return bool True if successfully sync'd or if no sync is necessary
    */
   public function syncSemesters(){
 
@@ -213,7 +213,7 @@ class SFDataManager {
 
   /**
    * Synchronize the locally managed list of States and the ones returned by Salesforce
-   * @return bool
+   * @return bool True if successfully sync'd or if no sync is necessary
    */
   public function syncStates(){
     if($this->checkStateTableExists()){

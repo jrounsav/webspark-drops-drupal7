@@ -29,7 +29,7 @@ class RFISubmission {
    * Required across all types of submissions
    * @var array
    */
-  public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID", "College");
+  public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID");
 
   /**
    * Validate whether all of the submitted data points meet requirements
@@ -205,6 +205,7 @@ class RFISubmission {
   }
 
   /**
+   * TODO - automatically generate this based on the program code
    * College Code
    * @param $data
    * @return bool

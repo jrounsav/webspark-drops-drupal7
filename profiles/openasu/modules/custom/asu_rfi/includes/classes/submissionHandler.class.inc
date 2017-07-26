@@ -17,6 +17,11 @@ class submissionHandler {
   private $onlineCatalog;
 
   /**
+   * @var boolean True if the submission is in test mode.
+   */
+  private $testMode;
+
+  /**
    * @var String authorization key for the middleware.
    */
   private $authKey;
@@ -98,13 +103,25 @@ class submissionHandler {
   /**
    * submissionHandler constructor.
    * @param $submission_object
+   * @param $onlineCatalog
+   * @param bool $testMode
+   * @param null $authKey
    * @throws Exception
    */
-  public function __construct($submission_object, $onlineCatalog, $authKey){
+  public function __construct($submission_object, $onlineCatalog, $testMode = true, $authKey = ""){
+    if($testMode == false){
+      $this->testMode = false;
+    } else {
+      $this->testMode = true;
+    }
     if (!$this->setSubmission($submission_object)){
       throw new Exception("The Submission Handler constructor can only accept an RFISubmission");
-    } else if (!$this->setOnlineCatalog($onlineCatalog)){
+    }
+    if (!$this->setOnlineCatalog($onlineCatalog)){
       throw new Exception("The Submission Handler failed to set the Online Catalog");
+    }
+    if(!$this->setAuthKey($authKey)){
+      throw new Exception("The supplied authorization key is not acceptable for the submissionHandler.");
     }
   }
 
@@ -335,25 +352,38 @@ class submissionHandler {
    * @param $data
    * @return bool|string
    *
-   * TODO - Support test endpoints at the root of the class
    */
   public function generateURLForRoute($route, $data){
     $url = false;
     switch ($route) {
       case "G":
+        if($this->testMode == false){
           $url = 'https://requestinfo.asu.edu/prospect_form_post';
+        } else {
+          $url = 'https://requestinfo-qa.asu.edu/prospect_form_post';
+        }
         break;
       case "UG":
         if($this->submission->getNodeID()){
+          if($this->testMode == false){
+            $environment = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi";
+          } else {
+            $environment = "https://webforms-qa.asu.edu/asu_rfi_dedupe/submit_rfi";
+          }
           $nodeid = $this->submission->getNodeID();
           $hash = $this->generateUndergradHash($this->submission->getNodeID());
-          $url = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi/$hash/$nodeid";
+          $url = "$environment/$hash/$nodeid";
         }
         break;
       case "O":
         if(!empty($data)) {
+          if($this->testMode == false){
+            $environment = "https://webforms.asu.edu/asu_edplus_middleware/submit";
+          } else {
+            $environment = "https://webforms-qa.asu.edu/asu_edplus_middleware/submit";
+          }
           $hash = $this->generateOnlineHash($data);
-          $url = "https://webforms.asu.edu/asu_edplus_middleware/submit/$hash";
+          $url = "$environment/$hash";
         }
         break;
       default:

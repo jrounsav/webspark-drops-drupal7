@@ -9,9 +9,10 @@ class SFDataManager {
 
   // Should sync ALL data points
   public function syncData(){
-    $this->syncCountries();
-    $this->syncStates();
-    $this->syncSemesters();
+    if($this->syncCountries() && $this->syncStates() && $this->syncSemesters()){
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -111,7 +112,7 @@ class SFDataManager {
     $result = db_select('asu_rfi_countries', 'c')
       ->fields('c')
       ->execute()
-      ->fetchAllAssoc("countryCode3");
+      ->fetchAllAssoc("countryDesc");
 
     return $result;
   }
@@ -253,7 +254,7 @@ class SFDataManager {
     $result = db_select('asu_rfi_states_list', 's')
       ->fields('s')
       ->execute()
-      ->fetchAllAssoc("stateCode");
+      ->fetchAllAssoc("stateDesc");
 
     return $result;
   }

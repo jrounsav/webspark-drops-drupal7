@@ -1,5 +1,5 @@
 <?php
-// $Id: asu_rfi.pages.inc 
+// $Id: asu_rfi.pages.inc
 
 /**
  * @file
@@ -665,7 +665,7 @@ function asu_rfi_form_data_submit($form, &$form_state)
     }
   }
   if (!empty($node_unique)) {
-    //get the node id of the current node to be updated 
+    //get the node id of the current node to be updated
     $get_nodeid = db_query('SELECT entity_id FROM {field_data_field_rfi_uniquedata} WHERE field_rfi_uniquedata_value = :unid', array(':unid' => $uniqueid))->fetchField();
 
     $node = node_load($get_nodeid);
@@ -831,21 +831,21 @@ function asu_rfi_second_form($form, &$form_state)
 '#collapsible' => FALSE,
 '#collapsed' => FALSE,
   );
-   
+
   $form['address_info']['address'] = array(
 '#type' => 'textfield',
 '#title' => t('Address'),
 '#size' => 30,
 '#maxlength' => 64,
   );
-  
+
   $form['address_info']['city'] = array(
 '#type' => 'textfield',
 '#title' => t('City'),
 '#size' => 30,
 '#maxlength' => 30,
   );
- 
+
   $form['address_info']['state'] = array(
 '#id' => 'rfi-state',
 '#type' => 'select',
@@ -1945,6 +1945,7 @@ function asu_rfi_long_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_address->set($address);
   $ewrapper->field_rfi_city->set($city);
   $ewrapper->field_rfi_international->set($international);
+  $ewrapper->field_rfi_sms_opted->set($form_state['values']['mobile_check']);
   $ewrapper->field_rfi_start_term->set($semester_name);
   $ewrapper->field_rfi_program_name->set($program_name);
   $ewrapper->field_rfi_college_name->set($college_name);

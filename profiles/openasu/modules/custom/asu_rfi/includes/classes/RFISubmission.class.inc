@@ -5,30 +5,31 @@
  */
 class RFISubmission {
 
-  private $prodTestFlag;
-  private $nodeID;
-  private $IPaddress;
-  private $college;
-  private $program;
-  private $prospectLevel;
-  private $campus;
-  private $sourceID;
-  private $baseURL;
-  private $firstName;
-  private $lastName;
-  private $email;
-  private $phone;
-  private $studentType;
-  private $birthdate;
-  private $SMS;
-  private $comments;
-  private $internationalStudent;
-  private $veteranStatus;
-  private $startingSemester;
-  private $country;
-  private $zipcode;
-  private $street;
-  private $city;
+  public $prodTestFlag;
+  public $nodeID;
+  public $IPaddress;
+  public $college;
+  public $program;
+  public $prospectLevel;
+  public $campus;
+  public $sourceID;
+  public $baseURL;
+  public $firstName;
+  public $lastName;
+  public $email;
+  public $phone;
+  public $studentType;
+  public $birthdate;
+  public $SMS;
+  public $comments;
+  public $internationalStudent;
+  public $veteranStatus;
+  public $startingSemester;
+  public $country;
+  public $zipcode;
+  public $street;
+  public $city;
+  public $typeOfForm;
 
   /**
    * SFDataManager object reference
@@ -173,13 +174,47 @@ class RFISubmission {
   public function getProdTestFlag(){
     if(isset($this->prodTestFlag)){
       return $this->prodTestFlag;
+    } else if(!isset($this->prodTestFlag)){
+      return "test";
     } else {
       return false;
     }
   }
   public function validateProdTestFlag($data){
 
-    if ($data == "TRUE" || $data == "FALSE") {
+    if ($data == "test" || $data == "prod") {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * What type of form is making the submission?
+   * MF = Multistep
+   * LF = Long Form
+   * V = Variant. Some irregular form
+   * @param $data
+   * @return bool
+   */
+  public function setTypeOfForm($data){
+    if($this->validateTypeOfForm($data)){
+      $this->typeOfForm= $data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  public function getTypeOfForm(){
+    if(isset($this->typeOfForm)){
+      return $this->typeOfForm;
+    } else {
+      return false;
+    }
+  }
+  public function validateTypeOfForm($data){
+
+    if ($data == "MF" || $data == "LF" || $data == "V") {
       return true;
     }
 
@@ -217,6 +252,7 @@ class RFISubmission {
 
   /**
    * Submitter's IP Address
+   * TODO - Real IP validation
    * @param $data
    * @return bool
    */
@@ -237,7 +273,7 @@ class RFISubmission {
   }
   public function validateIPAddress($data){
 
-    if (is_numeric($data)) {
+    if (isset($data)) {
       return true;
     }
 
@@ -245,7 +281,6 @@ class RFISubmission {
   }
 
   /**
-   * TODO - automatically generate this based on the program code
    * College Code
    * @param $data
    * @return bool
@@ -422,6 +457,7 @@ class RFISubmission {
 
   /**
    * Website's Base URL, for submission validation to the middleware
+   * TODO improve validation here
    * @param $data
    * @return bool
    */
@@ -442,8 +478,8 @@ class RFISubmission {
   }
   public function validateBaseURL($data){
 
-    if ($data){
-      return false;
+    if (!empty($data)){
+      return true;
     }
     return false;
   }
@@ -564,7 +600,7 @@ class RFISubmission {
   public function validatePhone($data){
 
     // Some coutries use + and x in their phone numbers. Must allow
-    if (!preg_match('/[^\d+x]|x(?=[^x]*x)/', $data))
+    if (!preg_match('/[^\d+x+-]|x(?=[^x]*x)/', $data))
     {
       if(strlen($data) < 16){
         return true;
@@ -670,7 +706,13 @@ class RFISubmission {
       return false;
     }
   }
-  public function getCity(){}
+  public function getCity(){
+    if(isset($this->city)){
+      return $this->city;
+    } else {
+      return false;
+    }
+  }
   public function validateCity($data){
 
     if(!empty($data) && strlen($data) < 32){
@@ -731,9 +773,9 @@ class RFISubmission {
   public function validateSMS($data){
 
     // Some coutries use + and x in their phone numbers. Must allow
-    if (!preg_match('/[^\d+x]|x(?=[^x]*x)/', $data))
+    if (!preg_match('/[^\d+x+-]|x(?=[^x]*x)/', $data))
     {
-      if(strlen($data) < 16){
+      if(strlen($data) < 16 && strlen($data) > 0){
         return true;
       }
     }

@@ -657,12 +657,12 @@ function asu_rfi_form_data_submit($form, &$form_state)
     $form_state['storage']['step'] = 'asu_rfi_second_form';
     $form_state['storage']['submission_nodeid'] = $entity->nid;
 
-    //Load asu_rfi_email.inc file to send email
-    if ($form_state['storage']['prospect_level'] == "Graduate") {
-      asu_rfi_grad_email($form_state['storage']['program_code'], $form_state['storage']['email'], $form_state['storage']['first_name']);
-    } else {
-      asu_rfi_undergrad_email($form_state['storage']['program_code'], $form_state['storage']['email'], $form_state['storage']['first_name']);
-    }
+    ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+    ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+    $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+    $email = new RFIEmailManager($submission, false);
+    $email->send();
+
   }
   if (!empty($node_unique)) {
     //get the node id of the current node to be updated
@@ -1957,11 +1957,11 @@ function asu_rfi_long_form_data_submit($form, &$form_state)
 
   //send the confirmation email
   if (($location !== 'Online' && $location !== 'online')) {
-    if ($form_state['values']['prospect_level'] == "Graduate") {
-      asu_rfi_grad_email($form_state['values']['program_code'], $form_state['values']['email'], $form_state['values']['first_name']);
-    } else {
-      asu_rfi_undergrad_email($form_state['values']['program_code'], $form_state['values']['email'], $form_state['values']['first_name']);
-    }
+    ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+    ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+    $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+    $email = new RFIEmailManager($submission, false);
+    $email->send();
   }
 
   $form_state['values']['submission_nodeid'] = $entity->nid;
@@ -2229,11 +2229,11 @@ function asu_rfi_current_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_submission_status->set('Complete');
   $ewrapper->save();
   $coded_nid = base64_encode($entity->nid);
-  if ($form_state['values']['degree_type'] !== "current_undergrad_form") {
-    asu_rfi_grad_email($form_state['values']['prog_plan'], $form_state['values']['email'], $form_state['values']['first_name']);
-  } else {
-    asu_rfi_undergrad_email($form_state['values']['prog_plan'], $form_state['values']['email'], $form_state['values']['first_name']);
-  }
+  ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+  ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+  $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+  $email = new RFIEmailManager($submission, false);
+  $email->send();
   drupal_goto("degree-programs/request-info-thank-you/$coded_nid");
 
 }

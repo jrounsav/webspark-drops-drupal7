@@ -121,12 +121,7 @@ class submissionHandler {
    * @param null $authKey
    * @throws Exception
    */
-  public function __construct($submission_object, $onlineCatalog, $testMode = true, $authKey = ""){
-    if($testMode == false){
-      $this->testMode = false;
-    } else {
-      $this->testMode = true;
-    }
+  public function __construct($submission_object, $onlineCatalog, $authKey = ""){
     if (!$this->setSubmission($submission_object)){
       throw new Exception("The Submission Handler constructor failed to validate your submission");
     }
@@ -268,14 +263,6 @@ class submissionHandler {
       $body = $this->setPOSTBody($map);
       $url = $this->generateURLForRoute($route, $body);
       $options = $this->setPOSTOptions($url, $body);
-
-      dpm($route);
-      dpm($map);
-      dpm($body);
-      dpm($url);
-      dpm($options);
-
-      return false;
 
       $response = $this->curl($options);
 
@@ -433,7 +420,7 @@ class submissionHandler {
     $url = false;
     switch ($route) {
       case "G":
-        if($this->testMode == "prod"){
+        if($this->submission->getProdTestFlag() == "prod"){
           $url = 'https://requestinfo.asu.edu/prospect_form_post';
         } else {
           $url = 'https://requestinfo-qa.asu.edu/prospect_form_post';
@@ -441,7 +428,7 @@ class submissionHandler {
         break;
       case "UG":
         if($this->submission->getNodeID()){
-          if($this->testMode == "prod"){
+          if($this->submission->getProdTestFlag() == "prod"){
             $environment = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi";
           } else {
             $environment = "https://webforms-qa.asu.edu/asu_rfi_dedupe/submit_rfi";
@@ -453,7 +440,7 @@ class submissionHandler {
         break;
       case "O":
         if(!empty($data)) {
-          if($this->testMode == "prod"){
+          if($this->submission->getProdTestFlag() == "prod"){
             $environment = "https://webforms.asu.edu/asu_edplus_middleware/submit";
           } else {
             $environment = "https://webforms-qa.asu.edu/asu_edplus_middleware/submit";

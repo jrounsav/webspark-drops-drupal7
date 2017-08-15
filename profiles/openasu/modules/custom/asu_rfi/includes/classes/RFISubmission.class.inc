@@ -398,6 +398,8 @@ class RFISubmission {
    * Campus code
    * @param $data
    * @return bool
+   *
+   * TODO - When setting the campus, encode it if necessary
    */
   public function setCampus($data){
     if($this->validateCampus($data)){

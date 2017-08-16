@@ -70,7 +70,7 @@ function asu_rfi_menu()
     'file' => 'includes/asu_rfi.pages.inc',
   );
 
-  // request info form admin settings page  
+  // request info form admin settings page
   $items['admin/config/content/asurfi'] = array(
     'title' => 'ASU RFI Form Settings',
     'description' => t('Administer RFI form settings.'),
@@ -395,127 +395,25 @@ function asu_rfi_cron()
 
   asu_rfi_check_programs();
 
-  $middleware_host = "webforms.asu.edu";
 
-  // Set as system variables so we can adjust via devel/php if desired.
-
+  /**
+   * This block of logic handles the updating of data managed by Salesforce
+   */
   $last_ran = variable_get('asu_rfi_cron_last_ran', 0);
   $stale_time = variable_get('asu_rfi_stale_time', 86400); // 86400 seconds == 1 day
 
-  if (($last_ran + $stale_time) < time()) { // If we last ran over $stale_time seconds ago.
+  if (($last_ran + $stale_time) < time()) {
+    ctools_include("SFDataManager.class", "asu_rfi", "includes/classes");
 
     drupal_flush_all_caches();
-
-    //update countries
-    $ctype = 'fieldinfo';
-    $cname = 'country';
-    $curl = "https://webforms.asu.edu/salesforce_query/api/$ctype/$cname";
-    try {
-      $c_ch = curl_init();
-      $coptions = array(
-        CURLOPT_URL => $curl,
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_HTTPHEADER => array('Content-Type: text/json', 'Authorization: Basic 7755:e7acf2e698751f4cac11718d97df6ebf64b94372'),
-      );
-
-      curl_setopt_array($c_ch, $coptions);
-
-      $cresponse = curl_exec($c_ch);
-
-      $cresult = json_decode($cresponse);
-      curl_close($c_ch);
-
-      if (FALSE === $cresponse) {
-        throw new Exception(curl_error($c_ch), curl_errno($c_ch));
-      }
-    } catch (Exception $e) {
-      trigger_error(sprintf(
-        'Curl failed with error #%d: %s',
-        $e->getCode(), $e->getMessage()),
-        E_USER_ERROR);
+    $dataManager = new SFDataManager();
+    $sync = $dataManager->syncData();
+    if($sync){
+      // Update asu_rfi_cron_last_ran time.
+      variable_set('asu_rfi_cron_last_ran', time());
+    } else {
+      watchdog("asu_rfi", "Failed to sync SF-managed data on cron run");
     }
-
-
-    if (count($cresult)) {
-
-      // Only clear table if we had a result.
-      db_query("TRUNCATE TABLE {asu_rfi_countries}");
-
-      // Refresh table.
-      foreach ($cresult as $country) {
-        db_query("INSERT INTO {asu_rfi_countries} (countryCode3, countryDesc) VALUES (:country_value, :country_label)", array(':country_value' => $country->value, ':country_label' => $country->label));
-      }
-
-    }
-
-    //update states
-    $type = 'fieldinfo';
-    $name = 'state_province';
-    $url = "https://webforms.asu.edu/salesforce_query/api/$type/$name";
-
-    $ch = curl_init();
-    $options = array(
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => 1,
-      CURLOPT_HTTPHEADER => array('Content-Type: text/json', 'Authorization: Basic 7755:e7acf2e698751f4cac11718d97df6ebf64b94372'),
-    );
-
-    curl_setopt_array($ch, $options);
-
-    $response = curl_exec($ch);
-
-    $result = json_decode($response);
-    curl_close($ch);
-
-    if (count($result)) {
-
-      // Only clear table if we had a result.
-      db_query("TRUNCATE TABLE {asu_rfi_states_list}");
-
-      foreach ($result as $state) {
-        db_query("INSERT INTO {asu_rfi_states_list} (stateCode, stateDesc) VALUES (:state_value, :state_label)", array(':state_value' => $state->value, ':state_label' => $state->label));
-      }
-
-    }
-
-    //update asu_rfi_sem_dates
-    $semtype = 'select';
-    $semname = 'rfi_dedupe_list_terms';
-    $semurl = "https://webforms.asu.edu/salesforce_query/api/$semtype/$semname";
-
-    $semfields = array(
-      'condition_Term_Status__c' => TRUE,
-    );
-
-    $sembody = json_encode($semfields);
-
-    $semch = curl_init();
-    $semoptions = array(
-      CURLOPT_URL => $semurl,
-      CURLOPT_POST => 1,
-      CURLOPT_POSTFIELDS => $sembody,
-      CURLOPT_RETURNTRANSFER => 1,
-      CURLOPT_HTTPHEADER => array('Content-Type: text/json', 'Authorization: Basic 7755:e7acf2e698751f4cac11718d97df6ebf64b94372'),
-    );
-
-    curl_setopt_array($semch, $semoptions);
-
-    $semresponse = curl_exec($semch);
-    $semresult = json_decode($semresponse);
-    curl_close($semch);
-
-    if (count($semresult)) {
-
-      // Only clear table if we had a result.
-      db_query("TRUNCATE TABLE {asu_rfi_sem_dates}");
-
-      foreach ($semresult as $serres) {
-        db_query("INSERT INTO {asu_rfi_sem_dates} (semId, semLabel) VALUES (:sem_id, :sem_label)", array(':sem_id' => $serres->Id, ':sem_label' => $serres->Name));
-      }
-
-    }
-    // Update asu_rfi_cron_last_ran time.
-    variable_set('asu_rfi_cron_last_ran', time());
   }
 
 
@@ -546,6 +444,7 @@ function asu_rfi_cron()
 
   }
 
+  // TODO - Plug email manager in here
   //check if the site hasn't posted submissions to salesforce for two days. If yes, send an email to administrator.
   //Get last time site had successful submission
   $last_sf_success = variable_get('last_success_SF_posting', 0);
@@ -596,22 +495,121 @@ function asu_rfi_cron()
 
 /**
  * Implements hook_cron_queue_info().
+ * Processes failed leads
+ *
+ * Uses the function "asu_rfi_repost_rfi" to handle each queued submission item
+ * Sources the queue "asu_rfi_failed_leads_queue"
+ * Runs for the specified time, in seconds. This selection is arbitrary
  */
 function asu_rfi_cron_queue_info()
 {
-
-  // Process to repost failed leads.
   $queues = array();
 
   $queues['asu_rfi_failed_leads_queue'] = array(
-    'worker callback' => 'asu_rfi_repost_rfi', // Function to call, each item.
-    'time' => 20, // Seconds to spend working on the queue.
+    'worker callback' => 'asu_rfi_repost_rfi',
+    'time' => 20,
   );
 
 
   return $queues;
 }
 
+/**
+ * Attempt to map a Drupal node to the RFISubmission.
+ * @param $nid
+ * @return RFISubmission
+ */
+function asu_rfi_node_to_RFISubmission($nid){
+  ctools_include("RFISubmission.class", "asu_rfi", "includes/classes");
+  ctools_include("SFDataManager.class", "asu_rfi", "includes/classes");
+
+  $node = node_load($nid);
+
+  $manager = new SFDataManager();
+  $submission = new RFISubmission();
+  $submission->setSFDataManager($manager);
+
+  $submission->setProdTestFlag(variable_get("asu_rfi_form_mode", "test"));
+
+  $submission->setBaseURL($node->field_rfi_domain['und'][0]['value']);
+  $submission->setFirstName($node->field_rfi_first_name['und'][0]['value']);
+  $submission->setLastName($node->field_rfi_last_name['und'][0]['value']);
+  $submission->setEmail($node->field_rfi_email['und'][0]['value']);
+  $submission->setBirthdate(base64_decode($node->field_rfi_dob['und'][0]['value']));
+  $submission->setPhone($node->field_rfi_phone['und'][0]['value']);
+  $submission->setStreet($node->field_rfi_address['und'][0]['value']);
+  $submission->setCity($node->field_rfi_city['und'][0]['value']);
+  $submission->setVeteranStatus($node->field_rfi_veteran['und'][0]['value']);
+  $submission->setProgram($node->field_rfi_program['und'][0]['value']);
+  $submission->setInternationalStudent($node->field_rfi_international['und'][0]['value']);
+  $submission->setComments($node->field_rfi_question['und'][0]['value']);
+  $submission->setStudentType($node->field_rfi_student_type['und'][0]['value']);
+  $submission->setCampus($node->field_rfi_campus['und'][0]['value']);
+  $submission->setZipcode($node->field_rfi_zipcode['und'][0]['value']);
+  $submission->setSMS($node->field_rfi_sms_opted['und'][0]['value']);
+  $submission->setNodeID($node->nid);
+  $submission->setIPAddress($node->field_rfi_ip_address['und'][0]['value']);
+  $submission->setStartingSemester($node->field_rfi_start_term_code['und'][0]['value']);
+  $submission->setState($node->field_rfi_state['und'][0]['value']);
+  $submission->setCountry($node->field_rfi_country['und'][0]['value']);
+  $submission->setStartingSemester($node->field_rfi_start_term['und'][0]['value']);
+
+  /**
+   * With the switch below, is this even necessary?
+   */
+  if($node->field_rfi_prospect_level['und'][0]['value'] == "Graduate"){
+    $submission->setProspectLevel("G");
+  } else if($node->field_rfi_prospect_level['und'][0]['value'] == "Undergraduate"){
+    $submission->setProspectLevel("UG");
+  } else {
+    // This block seems redundant. Leaving open for the variable prospect and form support.
+    // Will be implemented some day.
+    $submission->setProspectLevel("UG");
+  }
+
+
+  // What to do with the following?
+  $type_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
+  if(isset($node->field_rfi_location['und'][0]['value']) && $node->field_rfi_location['und'][0]['value'] == "online"){
+    $submission->setCampus("ONLNE");
+  }
+  switch ($type_of_form) {
+    case "Graduate long form":
+      $submission->setTypeOfForm("LF");
+      $submission->setProspectLevel("G");
+      break;
+    case "Graduate multi form":
+      $submission->setTypeOfForm('MF');
+      $submission->setProspectLevel("G");
+      break;
+    case "Graduate variant form":
+      $submission->setTypeOfForm('V');
+      $submission->setProspectLevel("G");
+      break;
+    case "Undergraduate long form":
+      $submission->setTypeOfForm("LF");
+      $submission->setProspectLevel("UG");
+      break;
+    case "Undergraduate multi form":
+      $submission->setTypeOfForm('MF');
+      $submission->setProspectLevel("UG");
+      break;
+    case "Undergraduate variant form":
+      $submission->setTypeOfForm('V');
+      $submission->setProspectLevel("UG");
+      break;
+    default:
+      $submission->setTypeOfForm("LF");
+      $submission->setProspectLevel("UG");
+      break;
+  }
+
+  return $submission;
+}
+
+function asu_rfi_progress_submission(){
+
+}
 
 /*********************************************************************
  * CALLBACKS
@@ -620,99 +618,56 @@ function asu_rfi_cron_queue_info()
 /**
  * Cron worker callback.
  *
- * Called once for each item.
- *
  * @param $data
  */
 function asu_rfi_repost_rfi($data)
 {
-
-  // Load and repost the RFI submissions based on the Prospect level
-
   $node = node_load($data->nid);
+  ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
 
-  // if graduate submission node, try to repost it to asu_rfi_grad_post file.
-  if (sizeof($node->field_rfi_prospect_level) != 0) {
-    if ($node->field_rfi_prospect_level['und'][0]['value'] == "Graduate") {
-      $gradpost['domain'] = $node->field_rfi_domain['und'][0]['value'];
-      $gradpost['first_name'] = $node->field_rfi_first_name['und'][0]['value'];
-      $gradpost['last_name'] = $node->field_rfi_last_name['und'][0]['value'];
-      $gradpost['email'] = $node->field_rfi_email['und'][0]['value'];
-      $gradpost['birthdate'] = base64_decode($node->field_rfi_dob['und'][0]['value']);
-      $gradpost['phone'] = $node->field_rfi_phone['und'][0]['value'];
-      $gradpost['address'] = isset($node->field_rfi_address['und'][0]['value']) ? $node->field_rfi_address['und'][0]['value'] : '';
-      $gradpost['state'] = isset($node->field_rfi_state['und'][0]['value']) ? $node->field_rfi_state['und'][0]['value'] : '';
-      $gradpost['country'] = isset($node->field_rfi_country['und'][0]['value']) ? $node->field_rfi_country['und'][0]['value'] : '';
-      $gradpost['semester_name'] = isset($node->field_rfi_start_term['und'][0]['value']) ? $node->field_rfi_start_term['und'][0]['value'] : '';
-      $gradpost['military'] = isset($node->field_rfi_veteran['und'][0]['value']) ? $node->field_rfi_veteran['und'][0]['value'] : '';
-      $gradpost['program_code'] = isset($node->field_rfi_program['und'][0]['value']) ? $node->field_rfi_program['und'][0]['value'] : '';
-      $gradpost['citizenship'] = isset($node->field_rfi_international['und'][0]['value']) ? $node->field_rfi_international['und'][0]['value'] : '';
-      $gradpost['questions'] = isset($node->field_rfi_question['und'][0]['value']) ? $node->field_rfi_question['und'][0]['value'] : '';
-      $gradpost['student_type'] = $node->field_rfi_student_type['und'][0]['value'];
-      if(isset($node->field_rfi_location['und'][0]['value'])){
-        $gradpost['location'] = $node->field_rfi_location['und'][0]['value'];
-      } else {
-        $gradpost['location'] = 'no_preference';
-      }
-      $gradpost['campus'] = $node->field_rfi_campus['und'][0]['value'];
-      $gradpost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
-      $gradpost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
-      $gradpost['submission_nodeid'] = $node->nid;
-      $type_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
-      if ($type_of_form == "Graduate long form") {
-        $gradpost['type_of_form'] = 'LF';
-      }
-      if ($type_of_form == "Graduate multi form") {
-        $gradpost['type_of_form'] = 'MF';
-      }
-      asu_rfi_grad_post($gradpost);
-      //watchdog('SF grad posting', "Posted successfully to ".$data->nid);
-      variable_set('last_attempt_SF_posting', time());
+  // Submit RFI
+  $submission = asu_rfi_node_to_RFISubmission($data->nid);
+  $onlinePrograms = asu_rfi_parse_programs();
+  $handler = new submissionHandler($submission, $onlinePrograms);
+  $response = $handler->submit();
 
+  // Handle Submission Errors
+  if (($response['http_code'] == 403 || $response['http_code'] == 500)) {
+
+    $error_message = $response;
+    $node->field_rfi_error_message->set($error_message);
+
+    // Send Error Email
+    $to_email = variable_get('asu_rfi_error_email', NULL);
+    if (!empty($mw_auth_key)) {
+      if (!empty($to_email)) {
+        ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+        $email = new RFIEmailManager($submission);
+        $result = $email->send();
+        if ($result) {
+          watchdog('asu_rfi', 'SF Error message email sent to ' . $to_email);
+          variable_set('SF_error_message_sent', time());
+        }
+      }
     }
 
-    //repost undergrad submissions to middleware
-
-    if ($node->field_rfi_prospect_level['und'][0]['value'] == "Undergraduate") {
-      $upost['domain'] = $node->field_rfi_domain['und'][0]['value'];
-      $upost['first_name'] = $node->field_rfi_first_name['und'][0]['value'];
-      $upost['last_name'] = $node->field_rfi_last_name['und'][0]['value'];
-      $upost['email'] = $node->field_rfi_email['und'][0]['value'];
-      $upost['birthdate'] = base64_decode($node->field_rfi_dob['und'][0]['value']);
-      $upost['phone'] = $node->field_rfi_phone['und'][0]['value'];
-      $upost['address'] = isset($node->field_rfi_address['und'][0]['value']) ? $node->field_rfi_address['und'][0]['value'] : '';
-      $upost['ip_address'] = isset($node->field_rfi_ip_address['und'][0]['value']) ? $node->field_rfi_ip_address['und'][0]['value'] : '';
-      $upost['state'] = isset($node->field_rfi_state['und'][0]['value']) ? $node->field_rfi_state['und'][0]['value'] : '';
-      $upost['country'] = isset($node->field_rfi_country['und'][0]['value']) ? $node->field_rfi_country['und'][0]['value'] : '';
-      $upost['start_date'] = $node->field_rfi_start_term_code['und'][0]['value'];
-      $upost['military'] = isset($node->field_rfi_veteran['und'][0]['value']) ? $node->field_rfi_veteran['und'][0]['value'] : '';
-      $upost['program_code'] = isset($node->field_rfi_program['und'][0]['value']) ? $node->field_rfi_program['und'][0]['value'] : '';
-      $upost['citizenship'] = isset($node->field_rfi_international['und'][0]['value']) ? $node->field_rfi_international['und'][0]['value'] : '';
-      $upost['questions'] = isset($node->field_rfi_question['und'][0]['value']) ? $node->field_rfi_question['und'][0]['value'] : '';
-      $upost['student_type'] = $node->field_rfi_student_type['und'][0]['value'];
-      if(isset($node->field_rfi_location['und'][0]['value'])){
-        $upost['location'] = $node->field_rfi_location['und'][0]['value'];
-      } else {
-        $upost['location'] = 'no_preference';
-      }
-      $upost['campus'] = $node->field_rfi_campus['und'][0]['value'];
-      $upost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
-      $upost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
-      $upost['submission_nodeid'] = $node->nid;
-      $upost['cron_run'] = "Cron_running";
-      $utype_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
-      if ($utype_of_form == "Undergraduate long form") {
-        $upost['type_of_form'] = 'LF';
-      }
-      if ($utype_of_form == "Undergraduate multi form") {
-        $upost['type_of_form'] = 'MF';
-      }
-      asu_rfi_undergrad_post($upost);
-      //watchdog('SF undergrad posting', "Posted successfully to ".$data->nid);
-      variable_set('last_attempt_SF_posting', time());
-
+    if (drupal_valid_path('admin')) {
+      drupal_set_message('Error message from Middleware: ' . $error_message);
     }
+
   }
+
+  // Status Progression
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+  if ($node_wrapper->field_rfi_submission_status->value() == "Incomplete") {
+    $node_wrapper->field_rfi_submission_status->set('Pending');
+  } else if ($node_wrapper->field_rfi_submission_status->value() == "Pending") {
+    $node_wrapper->field_rfi_submission_status->set('Action Required');
+  }
+
+  $node->save();
+  drupal_set_message('Posted to Middleware');
+  variable_set('last_attempt_SF_posting', time());
 
 }
 
@@ -743,7 +698,7 @@ function asu_rfi_form_alter(&$form, &$form_state, $form_id)
   }
   ////
 
-  //Change form type exposed filter in submissions view (/asu-rfi-submissions-report) form text field to select option   
+  //Change form type exposed filter in submissions view (/asu-rfi-submissions-report) form text field to select option
   if ($form['#id'] == 'views-exposed-form-asu-rfi-submissions-report-page') {
 
     $form_types = array('' => ' - All -');
@@ -1081,8 +1036,6 @@ function asu_rfi_detect_browser()
  * @return array where key is nid and value is program focus (program code +
  *   program plan code)
  *
- * TODO Probably will want to remove, or edit to use new program gathering
- * logic.
  */
 function asu_rfi_get_undergrad_programs()
 {
@@ -1228,78 +1181,54 @@ function asu_rfi_action_info()
 
 function asu_rfi_bulk_submit_action(&$node, $context)
 {
-  if ($node->field_rfi_prospect_level['und'][0]['value'] == "Undergraduate") {
-    $upost['domain'] = $node->field_rfi_domain['und'][0]['value'];
-    $upost['first_name'] = $node->field_rfi_first_name['und'][0]['value'];
-    $upost['last_name'] = $node->field_rfi_last_name['und'][0]['value'];
-    $upost['email'] = $node->field_rfi_email['und'][0]['value'];
-    $upost['birthdate'] = base64_decode($node->field_rfi_dob['und'][0]['value']);
-    $upost['phone'] = $node->field_rfi_phone['und'][0]['value'];
-    $upost['address'] = isset($node->field_rfi_address['und'][0]['value']) ? $node->field_rfi_address['und'][0]['value'] : '';
-    $upost['ip_address'] = isset($node->field_rfi_ip_address['und'][0]['value']) ? $node->field_rfi_ip_address['und'][0]['value'] : '';
-    $upost['state'] = isset($node->field_rfi_state['und'][0]['value']) ? $node->field_rfi_state['und'][0]['value'] : '';
-    $upost['country'] = isset($node->field_rfi_country['und'][0]['value']) ? $node->field_rfi_country['und'][0]['value'] : '';
-    $upost['start_date'] = $node->field_rfi_start_term_code['und'][0]['value'];
-    $upost['military'] = isset($node->field_rfi_veteran['und'][0]['value']) ? $node->field_rfi_veteran['und'][0]['value'] : '';
-    $upost['program_code'] = isset($node->field_rfi_program['und'][0]['value']) ? $node->field_rfi_program['und'][0]['value'] : '';
-    $upost['citizenship'] = isset($node->field_rfi_international['und'][0]['value']) ? $node->field_rfi_international['und'][0]['value'] : '';
-    $upost['questions'] = isset($node->field_rfi_question['und'][0]['value']) ? $node->field_rfi_question['und'][0]['value'] : '';
-    $upost['student_type'] = $node->field_rfi_student_type['und'][0]['value'];
-    if(isset($node->field_rfi_location['und'][0]['value'])){
-      $upost['location'] = $node->field_rfi_location['und'][0]['value'];
-    } else {
-      $upost['location'] = 'no_preference';
+  ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+  $node = node_load($node->nid);
+
+  // Submit RFI
+  $submission = asu_rfi_node_to_RFISubmission($node->nid);
+  $onlinePrograms = asu_rfi_parse_programs();
+  $handler = new submissionHandler($submission, $onlinePrograms);
+  $response = $handler->submit();
+
+  // Handler Errors
+  if (($response['http_code'] == 403 || $response['http_code'] == 500)) {
+
+    $error_message = $response;
+    $node->field_rfi_error_message->set($error_message);
+
+    // Send Error Emails
+    $to_email = variable_get('asu_rfi_error_email', NULL);
+    if (!empty($mw_auth_key)) {
+      if (!empty($to_email)) {
+        ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+        $email = new RFIEmailManager($submission);
+        $result = $email->send();
+        if ($result) {
+          watchdog('asu_rfi', 'SF Error message email sent to ' . $to_email);
+          variable_set('SF_error_message_sent', time());
+        }
+      }
     }
-    $upost['campus'] = $node->field_rfi_campus['und'][0]['value'];
-    $upost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
-    $upost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
-    $upost['submission_nodeid'] = $node->nid;
-    $utype_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
-    if ($utype_of_form == "Undergraduate long form") {
-      $upost['type_of_form'] = 'LF';
+
+    if (drupal_valid_path('admin')) {
+      drupal_set_message('Error message from Middleware: ' . $error_message);
     }
-    if ($utype_of_form == "Undergraduate multi form") {
-      $upost['type_of_form'] = 'MF';
-    }
-    asu_rfi_undergrad_post($upost);
-    drupal_set_message('Posted to Middleware');
+
   }
 
-  if ($node->field_rfi_prospect_level['und'][0]['value'] == "Graduate") {
-    $gradpost['domain'] = $node->field_rfi_domain['und'][0]['value'];
-    $gradpost['first_name'] = $node->field_rfi_first_name['und'][0]['value'];
-    $gradpost['last_name'] = $node->field_rfi_last_name['und'][0]['value'];
-    $gradpost['email'] = $node->field_rfi_email['und'][0]['value'];
-    $gradpost['birthdate'] = base64_decode($node->field_rfi_dob['und'][0]['value']);
-    $gradpost['phone'] = $node->field_rfi_phone['und'][0]['value'];
-    $gradpost['address'] = isset($node->field_rfi_address['und'][0]['value']) ? $node->field_rfi_address['und'][0]['value'] : '';
-    $gradpost['state'] = isset($node->field_rfi_state['und'][0]['value']) ? $node->field_rfi_state['und'][0]['value'] : '';
-    $gradpost['country'] = isset($node->field_rfi_country['und'][0]['value']) ? $node->field_rfi_country['und'][0]['value'] : '';
-    $gradpost['semester_name'] = isset($node->field_rfi_start_term['und'][0]['value']) ? $node->field_rfi_start_term['und'][0]['value'] : '';
-    $gradpost['military'] = isset($node->field_rfi_veteran['und'][0]['value']) ? $node->field_rfi_veteran['und'][0]['value'] : '';
-    $gradpost['program_code'] = isset($node->field_rfi_program['und'][0]['value']) ? $node->field_rfi_program['und'][0]['value'] : '';
-    $gradpost['citizenship'] = isset($node->field_rfi_international['und'][0]['value']) ? $node->field_rfi_international['und'][0]['value'] : '';
-    $gradpost['questions'] = isset($node->field_rfi_question['und'][0]['value']) ? $node->field_rfi_question['und'][0]['value'] : '';
-    $gradpost['student_type'] = $node->field_rfi_student_type['und'][0]['value'];
-    if(isset($node->field_rfi_location['und'][0]['value'])){
-      $gradpost['location'] = $node->field_rfi_location['und'][0]['value'];
-    } else {
-      $gradpost['location'] = 'no_preference';
-    }
-    $gradpost['campus'] = $node->field_rfi_campus['und'][0]['value'];
-    $gradpost['zipcode'] = isset($node->field_rfi_zipcode['und'][0]['value']) ? $node->field_rfi_zipcode['und'][0]['value'] : '';
-    $gradpost['mobile_check'] = isset($node->field_rfi_sms_opted['und'][0]['value']) ? $node->field_rfi_sms_opted['und'][0]['value'] : '';
-    $gradpost['submission_nodeid'] = $node->nid;
-    $type_of_form = isset($node->field_rfi_form_type['und'][0]['value']) ? $node->field_rfi_form_type['und'][0]['value'] : '';
-    if ($type_of_form == "Graduate long form") {
-      $gradpost['type_of_form'] = 'LF';
-    }
-    if ($type_of_form == "Graduate multi form") {
-      $gradpost['type_of_form'] = 'MF';
-    }
-    asu_rfi_grad_post($gradpost);
-    drupal_set_message('Posted to Salesforce');
+  // Progress Status
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+  if ($node_wrapper->field_rfi_submission_status->value() == "Incomplete") {
+    $node_wrapper->field_rfi_submission_status->set('Pending');
+  } else if ($node_wrapper->field_rfi_submission_status->value() == "Pending") {
+    $node_wrapper->field_rfi_submission_status->set('Action Required');
   }
+
+  $node->save();
+
+  drupal_set_message('Posted to Middleware');
+  variable_set('last_attempt_SF_posting', time());
+
 }
 
 
@@ -1347,7 +1276,7 @@ function asu_rfi_js_alter(&$javascript)
 function asu_rfi_preprocess_page(&$variables)
 {
 
-  //Check if /degree-programs/request-info-thank-you is loaded, grad the node id from the URL, load the node and get the variables. Add Google analytics code to the header. 
+  //Check if /degree-programs/request-info-thank-you is loaded, grad the node id from the URL, load the node and get the variables. Add Google analytics code to the header.
   if (isset($variables['theme_hook_suggestions'][1])) {
     if ($variables['theme_hook_suggestions'][1] == "page__degree_programs__request_info_thank_you") {
       $nodeid = base64_decode(arg(2));

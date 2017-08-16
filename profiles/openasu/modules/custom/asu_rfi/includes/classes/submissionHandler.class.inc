@@ -3,23 +3,30 @@
 /**
  * Class submissionHandler
  * Manages the passing of RFI Submissions to middlewares
- * TODO - Hook submissionHandler into the core module.
+ * TODO - submit() set to stop and return false before submitting. Handle "False" flags.
+ * TODO - Handle the error reporting/error progression for submissions.
+ * TODO - Add IPAddress to "required" once the IP bug is fixed.
  */
 class submissionHandler {
 
   /**
    * @var RFISubmission Object
    */
-  private $submission;
+  public $submission;
   /**
-   * @var Array of ASUOnline managed degrees
+   * @var array of ASUOnline managed degrees
    */
-  private $onlineCatalog;
+  public $onlineCatalog;
+
+  /**
+   * @var boolean True if the submission is in test mode.
+   */
+  public $testMode;
 
   /**
    * @var String authorization key for the middleware.
    */
-  private $authKey;
+  public $authKey;
 
   /** ================================================
    * Middleware to RFISubmission Field Mappings.
@@ -30,65 +37,76 @@ class submissionHandler {
    * Map Graduate Middleware => RFISubmission
    * @var array
    */
-  private $GraduateMap = array(
-    'first_name' => "FirstName",
-    'last_name' => "LastName",
-    'program' => "Program",
-    'email' => "Email",
-    'phone' => "Phone",
-    'prod_test_flag' => "ProdTestFlag",
-    'base_url' => "BaseURL",
-    'remote_nid' => "NodeID",
-    'ldetect_v' => "IPAddress",
-    'campaign' => "SourceID",
-    'sourceid' => "NodeID",
+  public $GraduateMap = array(
+    "requirements" => array("FirstName", "LastName", "Program", "Email", "Phone", "ProdTestFlag", "BaseURL", "TypeOfForm", "ProspectLevel"),
+    "map" => array(
+      'first_name' => "FirstName",
+      'last_name' => "LastName",
+      'program' => "Program",
+      'email' => "Email",
+      'phone' => "Phone",
+      'prod_test_flag' => "ProdTestFlag",
+      'base_url' => "BaseURL",
+      'remote_nid' => "NodeID",
+      'ldetect_v' => "IPAddress",
+      'campaign' => "BaseURL-TypeOfForm-ProspectLevel",
+      'sourceid' => "NodeID",
+    )
   );
 
   /**
    * Map Undergraduate Middleware => RFISubmission
    * @var array
    */
-  private $UndergraduateMap = array(
-    'source_id' => "SourceID",
-    'base_url' => "BaseURL",
-    'prod_test_flag' => "ProdTestFlag",
-    'first_name' => "FirstName",
-    'last_name' => "LastName",
-    'prospect_level' => 'ProspectLevelFull',
-    'student_type' => "StudentType",
-    'program' => "Program",
-    'starting_semester' => "StartingSemester",
-    'email' => "Email",
-    'zip' => "Zipcode",
-    'phone' => "Phone",
-    'birth_date' => "Birthdate",
-    'country' => "Country",
-    'sms' => "SMS",
-    'comments' => "Comments",
-    'street' => "Street",
-    'city' => "City",
-    'state' => "State",
-    'intnl_student' => "InternationalStudent",
-    'veteran_status' => "VeteranStatus",
-    'campus' => "Campus",
+  public $UndergraduateMap = array(
+    "requirements" => array("BaseURL", "TypeOfForm", "FirstName", "LastName", "ProdTestFlag",
+      "ProspectLevel", "Program", "StudentType", "StartingSemester", "Email", "Phone", "Birthdate"),
+    "map" => array(
+      'source_id' => "BaseURL-TypeOfForm-ProspectLevel",
+      'base_url' => "BaseURL",
+      'prod_test_flag' => "ProdTestFlag",
+      'first_name' => "FirstName",
+      'last_name' => "LastName",
+      'prospect_level' => 'ProspectLevelFull',
+      'student_type' => "StudentType",
+      'program' => "Program",
+      'starting_semester' => "StartingSemester",
+      'email' => "Email",
+      'zip' => "Zipcode",
+      'phone' => "Phone",
+      'birth_date' => "Birthdate",
+      'country' => "Country",
+      'sms' => "SMS",
+      'comments' => "Comments",
+      'street' => "Street",
+      'city' => "City",
+      'state' => "State",
+      'intnl_student' => "InternationalStudent",
+      'veteran_status' => "VeteranStatus",
+      'campus' => "Campus",
+    )
   );
 
   /**
    * Map ASUOnline Middleware => RFISubmission
    * @var array
    */
-  private $OnlineMap = array(
-    'first_name' => "FirstName",
-    'last_name' => "LastName",
-    'program' => "College-Program",
-    'email' => "Email",
-    'phone' => "Phone",
-    'prod_test_flag' => "ProdTestFlag",
-    'base_url' => "BaseURL",
-    'remote_nid' => "NodeID",
-    'ldetect_v' => "IPAddress",
-    'campaign' => "SourceID", // TODO - Should I break this out into more fields? I think I need a form type
-    'sourceid' => "NodeID", // TODO - Implement some sort of UUID setter getter
+  public $OnlineMap = array(
+    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "ProdTestFlag", "BaseURL", "NodeID", "TypeOfForm", "ProspectLevel"),
+//    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "ProdTestFlag", "BaseURL", "NodeID", "TypeOfForm", "ProspectLevel", "IPAddress"),
+    "map" => array(
+      'first_name' => "FirstName",
+      'last_name' => "LastName",
+      'program' => "College-Program",
+      'email' => "Email",
+      'phone' => "Phone",
+      'prod_test_flag' => "ProdTestFlag",
+      'base_url' => "BaseURL",
+      'remote_nid' => "NodeID",
+      'ldetect_v' => "IPAddress",
+      'campaign' => "BaseURL-TypeOfForm-ProspectLevel", //
+      'sourceid' => "NodeID", // TODO - Implement some sort of UUID setter getter
+    )
   );
 
   /** ================================================
@@ -98,13 +116,20 @@ class submissionHandler {
   /**
    * submissionHandler constructor.
    * @param $submission_object
+   * @param $onlineCatalog
+   * @param bool $testMode
+   * @param null $authKey
    * @throws Exception
    */
-  public function __construct($submission_object, $onlineCatalog, $authKey){
+  public function __construct($submission_object, $onlineCatalog, $authKey = ""){
     if (!$this->setSubmission($submission_object)){
-      throw new Exception("The Submission Handler constructor can only accept an RFISubmission");
-    } else if (!$this->setOnlineCatalog($onlineCatalog)){
+      throw new Exception("The Submission Handler constructor failed to validate your submission");
+    }
+    if (!$this->setOnlineCatalog($onlineCatalog)){
       throw new Exception("The Submission Handler failed to set the Online Catalog");
+    }
+    if(!$this->setAuthKey($authKey)){
+      throw new Exception("The supplied authorization key is not acceptable for the submissionHandler.");
     }
   }
 
@@ -123,12 +148,56 @@ class submissionHandler {
       return false;
     }
   }
-  public function validateSubmission($data){
+  public function validateSubmission($data = null){
+    if(!isset($data)){
+      $data = $this->submission;
+    }
+//    if(is_a($data, "RFISubmission") && $this->validateSubmissionBody($data)){
     if(is_a($data, "RFISubmission")){
       return true;
     } else {
       return false;
     }
+  }
+
+  /**
+   * Validate the submission body based on the required path
+   * @param $data
+   * @return bool
+   */
+  public function validateSubmissionBody($data){
+
+    $route = $this->determineRoute($data);
+    $map = $this->determineMap($route);
+
+    $body = [1,2];
+    $mapping = $map["map"];
+
+    foreach($mapping as $field => $functionBase){
+      $bases = explode("-", $functionBase);
+      $full = "";
+
+      for($i = 0; $i < sizeof($bases); $i++) {
+        $function = "get" . $bases[$i];
+
+        if(!$data->$function() && in_array($bases[$i], $map["requirements"])){
+          return false;
+        }
+
+        $response = $data->$function();
+        $full .= $response;
+        if($i < sizeof($bases) - 1 && sizeof($bases) > 1){
+          $full .= "-";
+        }
+      }
+
+      $body[$field] = $full;
+    }
+
+    if(count($body) > 0){
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -190,20 +259,7 @@ class submissionHandler {
   public function submit(){
     if(isset($this->submission)){
       $route = $this->determineRoute();
-      switch ($route) {
-        case "G":
-          $map = $this->GraduateMap;
-          break;
-        case "UG":
-          $map = $this->UndergraduateMap;
-          break;
-        case "O":
-          $map = $this->OnlineMap;
-          break;
-        default:
-          return false;
-          break;
-      }
+      $map = $this->determineMap($route);
       $body = $this->setPOSTBody($map);
       $url = $this->generateURLForRoute($route, $body);
       $options = $this->setPOSTOptions($url, $body);
@@ -238,35 +294,57 @@ class submissionHandler {
 
   }
 
-  // Needs thorough testing
   /**
-   * @return bool
+   * Determine functions choose the route, as well as choose the map. Maybe it would be better to set some local variable
+   * instead of returning some 1-off. This is a task for another day I guess.
+   * @return bool|string
    */
-  public function determineRoute(){
+  public function determineRoute($submission = null){
+    if(!isset($submission)){
+      $submission = $this->submission;
+    }
 
-    $route = false;
-    $campus = $this->submission->getCampus();
-    $program = $this->submission->getProgram();
+    $campus = $submission->getCampus();
+    $program = $submission->getProgram();
 
-    if($campus == "ONLNE" && $this->checkOnlineManaged($program)){
+    $managed = $this->checkOnlineManaged($program);
+    if($campus == "ONLNE" && $managed){
+      $submission->setCollege($managed);
       return "O";
     } else {
-      return $this->submission->getProspectLevel();
+      return $submission->getProspectLevel();
     }
+  }
+  public function determineMap($route){
+    switch ($route) {
+      case "G":
+        $map = $this->GraduateMap;
+        break;
+      case "UG":
+        $map = $this->UndergraduateMap;
+        break;
+      case "O":
+        $map = $this->OnlineMap;
+        break;
+      default:
+        return false;
+        break;
+    }
+
+    return $map;
   }
 
   /**
    * Check whether a program is in the provided list of ASUOnline managed programs.
    * @param $program
-   * @return bool
+   * @return bool|String If it's managed return the managing college, else return false.
    */
   public function checkOnlineManaged($program)
   {
-
     if (isset($this->onlineCatalog)) {
       foreach ($this->onlineCatalog as $item) {
         if ($program == $item->plancode && $item->crmdestination !== "asu") {
-          return true;
+          return $item->progcode ;
         }
       }
     }
@@ -303,15 +381,17 @@ class submissionHandler {
    */
   public function setPOSTBody($map){
     $body = [];
+    $mapping = $map["map"];
 
-    foreach($map as $field => $functionBase){
+    foreach($mapping as $field => $functionBase){
       $bases = explode("-", $functionBase);
       $full = "";
 
       for($i = 0; $i < sizeof($bases); $i++) {
         $function = "get" . $bases[$i];
 
-        if(!$this->submission->$full()){
+        if(!$this->submission->$function() && in_array($bases[$i], $map["requirements"])){
+          dpm($bases[$i]);
           return false;
         }
 
@@ -335,25 +415,38 @@ class submissionHandler {
    * @param $data
    * @return bool|string
    *
-   * TODO - Support test endpoints at the root of the class
    */
   public function generateURLForRoute($route, $data){
     $url = false;
     switch ($route) {
       case "G":
+        if($this->submission->getProdTestFlag() == "prod"){
           $url = 'https://requestinfo.asu.edu/prospect_form_post';
+        } else {
+          $url = 'https://requestinfo-qa.asu.edu/prospect_form_post';
+        }
         break;
       case "UG":
         if($this->submission->getNodeID()){
+          if($this->submission->getProdTestFlag() == "prod"){
+            $environment = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi";
+          } else {
+            $environment = "https://webforms-qa.asu.edu/asu_rfi_dedupe/submit_rfi";
+          }
           $nodeid = $this->submission->getNodeID();
           $hash = $this->generateUndergradHash($this->submission->getNodeID());
-          $url = "https://webforms.asu.edu/asu_rfi_dedupe/submit_rfi/$hash/$nodeid";
+          $url = "$environment/$hash/$nodeid";
         }
         break;
       case "O":
         if(!empty($data)) {
+          if($this->submission->getProdTestFlag() == "prod"){
+            $environment = "https://webforms.asu.edu/asu_edplus_middleware/submit";
+          } else {
+            $environment = "https://webforms-qa.asu.edu/asu_edplus_middleware/submit";
+          }
           $hash = $this->generateOnlineHash($data);
-          $url = "https://webforms.asu.edu/asu_edplus_middleware/submit/$hash";
+          $url = "$environment/$hash";
         }
         break;
       default:
@@ -385,5 +478,11 @@ class submissionHandler {
 
     return $hash;
   }
+
+  /**
+   * Currently Non-existent. Placeholder for a Grad hash
+   * @param $data
+   */
+  public function generateGradHash($data){}
 
 }

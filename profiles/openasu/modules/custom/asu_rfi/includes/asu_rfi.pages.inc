@@ -1,5 +1,5 @@
 <?php
-// $Id: asu_rfi.pages.inc 
+// $Id: asu_rfi.pages.inc
 
 /**
  * @file
@@ -657,15 +657,15 @@ function asu_rfi_form_data_submit($form, &$form_state)
     $form_state['storage']['step'] = 'asu_rfi_second_form';
     $form_state['storage']['submission_nodeid'] = $entity->nid;
 
-    //Load asu_rfi_email.inc file to send email
-    if ($form_state['storage']['prospect_level'] == "Graduate") {
-      asu_rfi_grad_email($form_state['storage']['program_code'], $form_state['storage']['email'], $form_state['storage']['first_name']);
-    } else {
-      asu_rfi_undergrad_email($form_state['storage']['program_code'], $form_state['storage']['email'], $form_state['storage']['first_name']);
-    }
+    ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+    ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+    $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+    $email = new RFIEmailManager($submission, false);
+    $email->send();
+
   }
   if (!empty($node_unique)) {
-    //get the node id of the current node to be updated 
+    //get the node id of the current node to be updated
     $get_nodeid = db_query('SELECT entity_id FROM {field_data_field_rfi_uniquedata} WHERE field_rfi_uniquedata_value = :unid', array(':unid' => $uniqueid))->fetchField();
 
     $node = node_load($get_nodeid);
@@ -831,21 +831,21 @@ function asu_rfi_second_form($form, &$form_state)
 '#collapsible' => FALSE,
 '#collapsed' => FALSE,
   );
-   
+
   $form['address_info']['address'] = array(
 '#type' => 'textfield',
 '#title' => t('Address'),
 '#size' => 30,
 '#maxlength' => 64,
   );
-  
+
   $form['address_info']['city'] = array(
 '#type' => 'textfield',
 '#title' => t('City'),
 '#size' => 30,
 '#maxlength' => 30,
   );
- 
+
   $form['address_info']['state'] = array(
 '#id' => 'rfi-state',
 '#type' => 'select',
@@ -1945,6 +1945,7 @@ function asu_rfi_long_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_address->set($address);
   $ewrapper->field_rfi_city->set($city);
   $ewrapper->field_rfi_international->set($international);
+  $ewrapper->field_rfi_sms_opted->set($form_state['values']['mobile_check']);
   $ewrapper->field_rfi_start_term->set($semester_name);
   $ewrapper->field_rfi_program_name->set($program_name);
   $ewrapper->field_rfi_college_name->set($college_name);
@@ -1956,11 +1957,11 @@ function asu_rfi_long_form_data_submit($form, &$form_state)
 
   //send the confirmation email
   if (($location !== 'Online' && $location !== 'online')) {
-    if ($form_state['values']['prospect_level'] == "Graduate") {
-      asu_rfi_grad_email($form_state['values']['program_code'], $form_state['values']['email'], $form_state['values']['first_name']);
-    } else {
-      asu_rfi_undergrad_email($form_state['values']['program_code'], $form_state['values']['email'], $form_state['values']['first_name']);
-    }
+    ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+    ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+    $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+    $email = new RFIEmailManager($submission, false);
+    $email->send();
   }
 
   $form_state['values']['submission_nodeid'] = $entity->nid;
@@ -2228,11 +2229,11 @@ function asu_rfi_current_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_submission_status->set('Complete');
   $ewrapper->save();
   $coded_nid = base64_encode($entity->nid);
-  if ($form_state['values']['degree_type'] !== "current_undergrad_form") {
-    asu_rfi_grad_email($form_state['values']['prog_plan'], $form_state['values']['email'], $form_state['values']['first_name']);
-  } else {
-    asu_rfi_undergrad_email($form_state['values']['prog_plan'], $form_state['values']['email'], $form_state['values']['first_name']);
-  }
+  ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+  ctools_include("RFIEmailManager.class", "asu_rfi", "includes/classes");
+  $submission = asu_rfi_node_to_RFISubmission($entity->nid);
+  $email = new RFIEmailManager($submission, false);
+  $email->send();
   drupal_goto("degree-programs/request-info-thank-you/$coded_nid");
 
 }

@@ -622,26 +622,22 @@ function asu_rfi_progress_submission(){
  */
 function asu_rfi_repost_rfi($data)
 {
-  /**
-   * Logic to handle the repost via the new classes
-   */
+  $node = node_load($data->nid);
   ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
 
+  // Submit RFI
   $submission = asu_rfi_node_to_RFISubmission($data->nid);
   $onlinePrograms = asu_rfi_parse_programs();
   $handler = new submissionHandler($submission, $onlinePrograms);
   $response = $handler->submit();
-  drupal_set_message('Posted to Middleware'); // TODO - modify this based on the response
-  variable_set('last_attempt_SF_posting', time());
 
-  // Submission progression - TODO add this logic to a function that will be called by the module.
+  // Handle Submission Errors
   if (($response['http_code'] == 403 || $response['http_code'] == 500)) {
-    $node = node_load($data->nid);
+
     $error_message = $response;
     $node->field_rfi_error_message->set($error_message);
-    $node->save();
-    // TODO Finish above
 
+    // Send Error Email
     $to_email = variable_get('asu_rfi_error_email', NULL);
     if (!empty($mw_auth_key)) {
       if (!empty($to_email)) {
@@ -660,6 +656,18 @@ function asu_rfi_repost_rfi($data)
     }
 
   }
+
+  // Status Progression
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+  if ($node_wrapper->field_rfi_submission_status->value() == "Incomplete") {
+    $node_wrapper->field_rfi_submission_status->set('Pending');
+  } else if ($node_wrapper->field_rfi_submission_status->value() == "Pending") {
+    $node_wrapper->field_rfi_submission_status->set('Action Required');
+  }
+
+  $node->save();
+  drupal_set_message('Posted to Middleware');
+  variable_set('last_attempt_SF_posting', time());
 
 }
 
@@ -1173,25 +1181,22 @@ function asu_rfi_action_info()
 
 function asu_rfi_bulk_submit_action(&$node, $context)
 {
-
-  /**
-   * Logic to handle the repost via the new classes
-   */
   ctools_include("submissionHandler.class", "asu_rfi", "includes/classes");
+  $node = node_load($node->nid);
 
+  // Submit RFI
   $submission = asu_rfi_node_to_RFISubmission($node->nid);
   $onlinePrograms = asu_rfi_parse_programs();
   $handler = new submissionHandler($submission, $onlinePrograms);
   $response = $handler->submit();
-  drupal_set_message('Posted to Middleware');
-  variable_set('last_attempt_SF_posting', time());
 
+  // Handler Errors
   if (($response['http_code'] == 403 || $response['http_code'] == 500)) {
-    $node = node_load($node->nid);
+
     $error_message = $response;
     $node->field_rfi_error_message->set($error_message);
-    $node->save();
 
+    // Send Error Emails
     $to_email = variable_get('asu_rfi_error_email', NULL);
     if (!empty($mw_auth_key)) {
       if (!empty($to_email)) {
@@ -1210,6 +1215,20 @@ function asu_rfi_bulk_submit_action(&$node, $context)
     }
 
   }
+
+  // Progress Status
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+  if ($node_wrapper->field_rfi_submission_status->value() == "Incomplete") {
+    $node_wrapper->field_rfi_submission_status->set('Pending');
+  } else if ($node_wrapper->field_rfi_submission_status->value() == "Pending") {
+    $node_wrapper->field_rfi_submission_status->set('Action Required');
+  }
+
+  $node->save();
+
+  drupal_set_message('Posted to Middleware');
+  variable_set('last_attempt_SF_posting', time());
+
 }
 
 

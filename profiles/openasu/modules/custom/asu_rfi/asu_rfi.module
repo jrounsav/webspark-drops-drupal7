@@ -515,6 +515,89 @@ function asu_rfi_cron_queue_info()
 }
 
 /**
+ * Convert an RFISubmission object into a Drupal managed node.
+ * @param $submission RFISubmission
+ * @param $status
+ * Design note: This was left out of the object because I wanted to preserve the class as being responsible for the form
+ */
+function asu_rfi_RFISubmission_to_node($submission, $status = "Pending"){
+  ctools_include("RFISubmission.class", "asu_rfi", "includes/classes");
+
+  if($submission->getNodeID()){
+    $entity = entity_load_single("node", $submission->getNodeID());
+  } else {
+    global $user;
+    $ent_values = array(
+      'type' => 'asu_rfi',
+      'uid' => $user->uid,
+      'status' => 0,
+      'comment' => 1,
+      'promote' => 0,
+    );
+    $entity = entity_create('node', $ent_values);
+  }
+
+  $fname = $submission->getFirstName() ? $submission->getFirstName() : "";
+  $domain = $submission->getBaseURL() ? $submission->getBaseURL() : "";
+  $lname = $submission->getLastName() ? $submission->getLastName() : "";
+  $stype = $submission->getStudentType() ? $submission->getStudentType() : "";
+  $email = $submission->getEmail() ? $submission->getEmail() : "";
+  $phone = $submission->getPhone() ? $submission->getPhone(): "";
+  $country = $submission->getCountry() ? $submission->getCountry() : "";
+  $zip = $submission->getZipcode() ? $submission->getZipcode() : "";
+  $semester = $submission->getStartingSemester() ? $submission->getStartingSemester() : "";
+  $program = $submission->getProgram() ? $submission->getProgram() : "";
+  $college_code = $submission->getCollege() ? $submission->getCollege() : "";
+  $form_type = $submission->getTypeOfForm() ? $submission->getTypeOfForm() : "";
+  $ipaddress = $submission->getIPAddress() ? $submission->getIPAddress() : "";
+  $state = $submission->getState() ? $submission->getState() : "";
+  $veteran = $submission->getVeteranStatus() ? $submission->getVeteranStatus() : "";
+  $questions = $submission->getComments() ? $submission->getComments() : "";
+  $dobdate = $submission->getBirthdate() ? $submission->getBirthdate() : "";
+  $address = $submission->getStreet() ? $submission->getStreet() : "";
+  $city = $submission->getCity() ? $submission->getCity() : "";
+  $international = $submission->getInternationalStudent() ? $submission->getInternationalStudent() : "";
+  $sms = $submission->getSMS() ? $submission->getSMS() : "";
+  $prospectLevel = $submission->getProspectLevel() ? $submission->getProspectLevel() : "";
+  $campus = $submission->getCampus() ? $submission->getCampus() : "";
+
+  $ewrap = entity_metadata_wrapper('node', $entity);
+  $ewrap->title->set($fname);
+  $ewrap->field_rfi_domain->set($domain);
+  $ewrap->field_rfi_first_name->set($fname);
+  $ewrap->field_rfi_last_name->set($lname);
+  $ewrap->field_rfi_student_type->set($stype);
+  $ewrap->field_rfi_email->set($email);
+  $ewrap->field_rfi_phone->set($phone);
+  $ewrap->field_rfi_country->set($country);
+  $ewrap->field_rfi_zipcode->set($zip);
+  $ewrap->field_rfi_start_term_code->set($semester);
+  $ewrap->field_rfi_program->set($program);
+  $ewrap->field_rfi_college_code->set($college_code);
+  $ewrap->field_rfi_form_type->set($form_type);
+  $ewrap->field_rfi_ip_address->set(intval($ipaddress));
+  $ewrap->field_rfi_state->set($state);
+  $ewrap->field_rfi_veteran->set($veteran);
+  $ewrap->field_rfi_question->set(check_plain($questions));
+  $ewrap->field_rfi_dob->set(base64_encode($dobdate));
+  $ewrap->field_rfi_submission_status->set($status);
+  $ewrap->field_rfi_address->set($address);
+  $ewrap->field_rfi_city->set($city);
+  $ewrap->field_rfi_international->set($international);
+  $ewrap->field_rfi_sms_opted->set($sms);
+  // TODO - Complete logic in the RFISubmission class to set & get the The following items, or rewrite the solution
+//  $ewrap->field_rfi_start_term->set($semester_name);
+//  $ewrap->field_rfi_program_name->set($program_name);
+//  $ewrap->field_rfi_college_name->set($college_name);
+//  $ewrap->field_rfi_location->set($location);
+  $ewrap->field_rfi_prospect_level->set($prospectLevel);
+  $ewrap->field_rfi_campus->set($campus);
+
+  $ewrap->save();
+
+}
+
+/**
  * Attempt to map a Drupal node to the RFISubmission.
  * @param $nid
  * @return RFISubmission

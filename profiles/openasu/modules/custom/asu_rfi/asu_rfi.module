@@ -516,9 +516,12 @@ function asu_rfi_cron_queue_info()
 
 /**
  * Convert an RFISubmission object into a Drupal managed node.
- * @param $submission RFISubmission
- * @param $status
+ * @param $submission
+ * @param string $status
+ * @return bool|mixed
  * Design note: This was left out of the object because I wanted to preserve the class as being responsible for the form
+ * of the submission, rather than an interface to Drupal. Ideally all of that logic will be abstracted out and the Drupal
+ * bits moved out to the module.
  */
 function asu_rfi_RFISubmission_to_node($submission, $status = "Pending"){
   ctools_include("RFISubmission.class", "asu_rfi", "includes/classes");
@@ -595,6 +598,7 @@ function asu_rfi_RFISubmission_to_node($submission, $status = "Pending"){
 
   $ewrap->save();
 
+  return $entity;
 }
 
 /**

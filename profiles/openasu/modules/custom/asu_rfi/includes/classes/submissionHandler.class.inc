@@ -4,7 +4,6 @@
  * Class submissionHandler
  * Manages the passing of RFI Submissions to middlewares
  * TODO - submit() set to stop and return false before submitting. Handle "False" flags.
- * TODO - Handle the error reporting/error progression for submissions.
  * TODO - Add IPAddress to "required" once the IP bug is fixed.
  */
 class submissionHandler {
@@ -38,7 +37,7 @@ class submissionHandler {
    * @var array
    */
   public $GraduateMap = array(
-    "requirements" => array("FirstName", "LastName", "Program", "Email", "Phone", "ProdTestFlag", "BaseURL", "TypeOfForm", "ProspectLevel"),
+    "requirements" => array("FirstName", "LastName", "Program", "Email", "Phone", "BaseURL", "TypeOfForm", "ProspectLevel"),
     "map" => array(
       'first_name' => "FirstName",
       'last_name' => "LastName",
@@ -59,7 +58,7 @@ class submissionHandler {
    * @var array
    */
   public $UndergraduateMap = array(
-    "requirements" => array("BaseURL", "TypeOfForm", "FirstName", "LastName", "ProdTestFlag",
+    "requirements" => array("BaseURL", "TypeOfForm", "FirstName", "LastName",
       "ProspectLevel", "Program", "StudentType", "StartingSemester", "Email", "Phone", "Birthdate"),
     "map" => array(
       'source_id' => "BaseURL-TypeOfForm-ProspectLevel",
@@ -92,8 +91,8 @@ class submissionHandler {
    * @var array
    */
   public $OnlineMap = array(
-    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "ProdTestFlag", "BaseURL", "NodeID", "TypeOfForm", "ProspectLevel"),
-//    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "ProdTestFlag", "BaseURL", "NodeID", "TypeOfForm", "ProspectLevel", "IPAddress"),
+    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "BaseURL", "TypeOfForm", "ProspectLevel"),
+//    "requirements" => array("FirstName", "LastName", "Program", "College", "Email", "Phone", "BaseURL", "TypeOfForm", "ProspectLevel", "IPAddress"),
     "map" => array(
       'first_name' => "FirstName",
       'last_name' => "LastName",

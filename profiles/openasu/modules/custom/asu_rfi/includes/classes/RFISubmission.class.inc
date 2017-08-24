@@ -42,7 +42,7 @@ class RFISubmission {
    * Required across all types of submissions
    * @var array
    */
-  public $require = array("Program", "FirstName", "LastName", "Phone", "Email", "SourceID");
+  public $require = array("Program", "College", "FirstName", "LastName", "Phone", "Email", "ProspectLevel", "Birthdate");
 
   /**
    * Validate whether all of the submitted data points meet requirements
@@ -177,7 +177,7 @@ class RFISubmission {
     } else if(!isset($this->prodTestFlag)){
       return "test";
     } else {
-      return false;
+      return "test";
     }
   }
   public function validateProdTestFlag($data){

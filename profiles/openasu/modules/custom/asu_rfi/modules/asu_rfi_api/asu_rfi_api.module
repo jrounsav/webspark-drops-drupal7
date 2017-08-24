@@ -1,8 +1,8 @@
 <?php
 
 /**
- * TODO Figure out how to protect forms from bots.
- * TODO Figure out a good method for placing modular forms.
+ * TODO - Expose SF Data endpoints
+ * TODO - Finish up other TODOs
  */
 
 /**
@@ -53,7 +53,7 @@ function asu_rfi_api_menu()
  */
 function asu_rfi_api_request_callback(){
   $response = asu_rfi_api_request($_POST);
-  
+
   return drupal_json_output($response);
 
 }
@@ -85,7 +85,7 @@ function asu_rfi_api_request($data){
     $response = $submission->validate($data);
     if($response['status']){
 
-      $status = asu_rfi_api_submit($data);
+      $status = asu_rfi_api_submit($data, $submission);
 
       if($status == true){
         $response['status'] = 1;
@@ -108,12 +108,44 @@ function asu_rfi_api_request($data){
   return $response;
 }
 
-function asu_rfi_api_submit($data){
+/** ====================
+ * asu_rfi_api_submit & asu_rfi_api_map_submission are weakly typed.
+ * TODO - handle potential errors better. Maybe throw exceptions.
+    ==================== */
+/**
+ * Create Node from the API data
+ * @param $data
+ * @param $submission
+ * @return bool
+ */
+function asu_rfi_api_submit($data, $submission){
+  global $base_url;
+  $submission = asu_rfi_api_map_submission($data, $submission);
+  $submission->setBaseURL($base_url);
+  $submission->setTypeOfForm("V");
 
-  // TODO - Attempt submission of data, sanitizing input.
-  // TODO - Align requirements between RFISubmission object and the submissionHandler
-  // TODO - Define Submission to Node function
-  // TODO - Attempt save
 
-  return false;
+  asu_rfi_RFISubmission_to_node($submission);
+
+  return true;
+}
+
+/**
+ * Convert API data into an RFI Submission Object
+ * @param $data
+ * @param $submission
+ * @return mixed
+ */
+function asu_rfi_api_map_submission($data, $submission){
+
+  foreach($data as $k => $v){
+    $strName = "set" . $k;
+
+    if(method_exists($submission, $strName)){
+      $submission->$strName($v);
+    }
+  }
+
+  return $submission;
+
 }

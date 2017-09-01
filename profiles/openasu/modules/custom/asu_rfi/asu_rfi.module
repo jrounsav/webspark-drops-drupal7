@@ -1417,7 +1417,7 @@ function asu_rfi_preprocess_page(&$variables)
       $college = 'RFI - ' . $locale . ' - ' . $prog_full_name;
 
       drupal_add_js("(function ($) { 
-        dataLayer = [{
+        dataLayer.push({
            'event': 'ecommerce_event',
            'transactionId': '$ga_id',
           'transactionAffiliation': '$program_code',
@@ -1429,11 +1429,11 @@ function asu_rfi_preprocess_page(&$variables)
                 'price': '$price', 
                 'quantity': '1'
               }]
-            }];
+            });
         })(jQuery)", array('type' => 'inline', 'scope' => 'header', 'weight' => 0));
 
 //    drupal_add_js("(function ($) {
-//       dataLayer = [{
+//       dataLayer.push({
 //          'event': 'ecommerce_event',
 //          'transactionId': '$ga_id',
 //          'transactionAffiliation': '$program_name',
@@ -1445,7 +1445,7 @@ function asu_rfi_preprocess_page(&$variables)
 //                'price': '$price',
 //                'quantity': '1'
 //              }]
-//            }];
+//            });
 //        })(jQuery)", array('type' => 'inline', 'scope' => 'header','weight' => 0));
     } //if confirmation node id specified in module settings page is called instead, run below code
     else {
@@ -1480,7 +1480,7 @@ function asu_rfi_preprocess_page(&$variables)
             }
           }
           drupal_add_js("(function ($) { 
-          dataLayer = [{
+          dataLayer.push({
              'event': 'ecommerce_event',
              'transactionId': '$ga_id',
              'transactionAffiliation': '$college_code',
@@ -1492,11 +1492,11 @@ function asu_rfi_preprocess_page(&$variables)
                 'price': '$price', 
                 'quantity': '1'
               }]
-         }];
+         });
        })(jQuery)", array('type' => 'inline', 'scope' => 'header', 'weight' => 0));
 //       //GMT transaction variables
 //       drupal_add_js("(function ($) {
-//         dataLayer = [{
+//         dataLayer.push({
 //            'event': 'ecommerce_event',
 //            'transactionId': '$ga_id',
 //            'transactionAffiliation': '$college',
@@ -1508,7 +1508,7 @@ function asu_rfi_preprocess_page(&$variables)
 //               'price': '$price',
 //               'quantity': '1'
 //             }]
-//        }];
+//        });
 //      })(jQuery)", array('type' => 'inline', 'scope' => 'header','weight' => 0));
         }
       } else {
@@ -1539,7 +1539,7 @@ function asu_rfi_preprocess_page(&$variables)
             }
             drupal_add_js("(function ($) { 
                    if($('#asu-rfi-multi-part1-thanks')){
-                    dataLayer = [{
+                    dataLayer.push({
                       'event': 'ecommerce_event',
                       'transactionId': '$ga_id',
                       'transactionAffiliation': '$program_code',
@@ -1551,7 +1551,7 @@ function asu_rfi_preprocess_page(&$variables)
                         'price': '$price', 
                         'quantity': '1'
                       }]
-                    }]; 
+                    }); 
                    }
                 })(jQuery)", array('type' => 'inline', 'scope' => 'header', 'weight' => 0));
           }

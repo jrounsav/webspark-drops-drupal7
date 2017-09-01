@@ -640,7 +640,7 @@ function asu_rfi_form_data_submit($form, &$form_state)
     $ewrapper->field_rfi_start_term_code->set($form_state['storage']['start_date']);
     $ewrapper->field_rfi_program->set($form_state['storage']['program_code']);
     $ewrapper->field_rfi_form_type->set($multi_form_type);
-    $ewrapper->field_rfi_ip_address->set(intval($form_state['storage']['ip_address']));
+    $ewrapper->field_rfi_ip_address->set(filter_var($form_state['storage']['ip_address'], FILTER_VALIDATE_IP));
     $ewrapper->field_rfi_college_code->set($form_state['storage']['college_code']);
     $ewrapper->field_rfi_submission_status->set('Incomplete');
     $ewrapper->field_rfi_dob->set(base64_encode($dobdate));
@@ -682,7 +682,7 @@ function asu_rfi_form_data_submit($form, &$form_state)
     $ewrapper->field_rfi_start_term_code->set($form_state['storage']['start_date']);
     $ewrapper->field_rfi_program->set($form_state['storage']['program_code']);
     $ewrapper->field_rfi_form_type->set($multi_form_type);
-    $ewrapper->field_rfi_ip_address->set(intval($form_state['storage']['ip_address']));
+    $ewrapper->field_rfi_ip_address->set(filter_var($form_state['storage']['ip_address'], FILTER_VALIDATE_IP));
     $ewrapper->field_rfi_college_code->set($form_state['storage']['college_code']);
     $ewrapper->field_rfi_submission_status->set('Incomplete');
     $ewrapper->field_rfi_dob->set(base64_encode($dobdate));
@@ -1936,7 +1936,7 @@ function asu_rfi_long_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_program->set($program);
   $ewrapper->field_rfi_college_code->set($college_code);
   $ewrapper->field_rfi_form_type->set($long_form_type);
-  $ewrapper->field_rfi_ip_address->set(intval($ipaddress));
+  $ewrapper->field_rfi_ip_address->set(filter_var($ipaddress, FILTER_VALIDATE_IP));
   $ewrapper->field_rfi_state->set($state);
   $ewrapper->field_rfi_veteran->set($veteran);
   $ewrapper->field_rfi_question->set(check_plain($questions));
@@ -2224,7 +2224,7 @@ function asu_rfi_current_form_data_submit($form, &$form_state)
   $ewrapper->field_rfi_program->set($program);
   $ewrapper->field_rfi_program_name->set($program_name);
   $ewrapper->field_rfi_form_type->set($form_type);
-  $ewrapper->field_rfi_ip_address->set(intval($ipaddress));
+  $ewrapper->field_rfi_ip_address->set(filter_var($ipaddress, FILTER_VALIDATE_IP));
   $ewrapper->field_rfi_question->set($questions);
   $ewrapper->field_rfi_submission_status->set('Complete');
   $ewrapper->save();

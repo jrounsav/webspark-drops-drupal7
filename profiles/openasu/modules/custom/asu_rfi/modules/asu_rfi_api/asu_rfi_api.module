@@ -34,11 +34,13 @@ function asu_rfi_api_menu()
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/config/content/asurfi-api'] = array(
+  $items['admin/config/content/asurfi/api'] = array(
     'title' => 'Configure RFI API',
     'description' => 'Update various API settings for the RFI',
     'weight' => -30,
-    'page callback' => 'asu_rfi_api_config_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('asu_rfi_api_settings'),
+    'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('configure asu rfi api'),
   );
 
@@ -61,8 +63,27 @@ function asu_rfi_api_request_callback(){
 /**
  * API Config admin form
  */
-function asu_rfi_api_config_page(){
-  // TODO populate form to confgure rate limiting
+function asu_rfi_api_settings(){
+
+  $rpm = variable_get("asu_rfi_api_rpm", 20);
+
+  $form = array();
+
+  $form['asu_rfi_api_rpm'] = array(
+    '#type' => 'textfield',
+    '#title' => 'API Rate Limiter',
+    '#description' => t('Set maximum requests per minute'),
+    '#attributes' => array(
+      'data-type' => 'number',
+    ),
+    '#default_value' => $rpm,
+    '#size' => 128,
+    '#maxlength' => 25,
+    '#required' => TRUE,
+    '#disabled' => FALSE,
+  );
+
+  return system_settings_form($form);
 }
 
 /**
@@ -119,9 +140,9 @@ function asu_rfi_api_request($data){
  * @return bool
  */
 function asu_rfi_api_submit($data, $submission){
-  global $base_url;
+  $url = $_SERVER['HTTP_HOST'];
   $submission = asu_rfi_api_map_submission($data, $submission);
-  $submission->setBaseURL($base_url);
+  $submission->setBaseURL($url);
   $submission->setTypeOfForm("V");
 
 
